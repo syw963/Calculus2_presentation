@@ -194,189 +194,374 @@ class Graph {
 }
 
 /* ---------- Deck-specific graphs (edit here) ---------- */
-/* 단위원 그림: 가로세로 축척이 같도록 x 범위를 캔버스 비율로 정한다 */
-function circleGraph(id, yMax) {
-  const c = document.getElementById(id);
-  if (!c) return null;
-  const W = +(c.dataset.w || c.width), H = +(c.dataset.h || c.height);
-  const yMin = -0.16, xMin = -0.16;
-  return new Graph(id, { xMin, xMax: xMin + (yMax - yMin) * W / H, yMin, yMax });
-}
-const pt = a => [Math.cos(a), Math.sin(a)];
-function gLine(g, p, q, color, lw = 3, dash = false) {
-  const { ctx } = g;
-  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = lw;
-  if (dash) ctx.setLineDash([12, 8]);
-  ctx.moveTo(g.wx(p[0]), g.wy(p[1])); ctx.lineTo(g.wx(q[0]), g.wy(q[1]));
-  ctx.stroke(); ctx.setLineDash([]);
-}
-function gPath(g, pts, color, lw = 3) {
-  const { ctx } = g;
-  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round';
-  pts.forEach((p, i) => i ? ctx.lineTo(g.wx(p[0]), g.wy(p[1])) : ctx.moveTo(g.wx(p[0]), g.wy(p[1])));
-  ctx.stroke();
-}
-function gFill(g, pts, color, alpha) {
-  const { ctx } = g;
-  ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath();
-  pts.forEach((p, i) => i ? ctx.lineTo(g.wx(p[0]), g.wy(p[1])) : ctx.moveTo(g.wx(p[0]), g.wy(p[1])));
-  ctx.closePath(); ctx.fill(); ctx.restore();
-}
-function gArc(g, r, a0, a1, color, lw = 3) {
-  const { ctx } = g, R = g.wx(r) - g.wx(0);
-  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = lw;
-  ctx.arc(g.wx(0), g.wy(0), R, -a1, -a0); ctx.stroke();
-}
-function gSector(g, r, a0, a1, color, alpha) {
-  const { ctx } = g, R = g.wx(r) - g.wx(0);
-  ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath();
-  ctx.moveTo(g.wx(0), g.wy(0)); ctx.arc(g.wx(0), g.wy(0), R, -a1, -a0); ctx.closePath();
-  ctx.fill(); ctx.restore();
-}
-const fmt3 = v => v.toFixed(3), fmt4 = v => v.toFixed(4);
 
-/* 3. 넓이 비교 (슬라이더: 중심각 x) */
-function drawArea(X) {
-  const g = circleGraph('g-area', 1.7); if (!g) return;
-  const O = [0, 0], A = [1, 0], P = pt(X), T = [1, Math.tan(X)], H = [P[0], 0];
-  const c1 = cssVar('--g-curve-1'), c2 = cssVar('--g-curve-2'), c3 = cssVar('--g-curve-3');
-  const ink = cssVar('--c-ink');
+/* Graph 확장: 선분·경로·다각형·호·화살표·상자·첨자 라벨 (모두 Graph 좌표계 사용) */
+class DeckGraph extends Graph {
+  get s() { return this.W / (this.xMax - this.xMin); }
+  line(x0, y0, x1, y1, color, lw = 2, dash = null) {
+    const { ctx } = this;
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round';
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(this.wx(x0), this.wy(y0)); ctx.lineTo(this.wx(x1), this.wy(y1));
+    ctx.stroke(); ctx.restore();
+  }
+  path(pts, color, lw = 3, dash = null) {
+    if (!pts.length) return;
+    const { ctx } = this;
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round';
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => i ? ctx.lineTo(this.wx(x), this.wy(y)) : ctx.moveTo(this.wx(x), this.wy(y)));
+    ctx.stroke(); ctx.restore();
+  }
+  fillPoly(pts, color, alpha = 1) {
+    const { ctx } = this;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath();
+    pts.forEach(([x, y], i) => i ? ctx.lineTo(this.wx(x), this.wy(y)) : ctx.moveTo(this.wx(x), this.wy(y)));
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  circle(x, y, r, color, alpha = 1) {
+    const { ctx } = this;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(this.wx(x), this.wy(y), r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  /* 중심 (cx, cy), 반지름 r, 각 a0 → a1 (반시계) */
+  arc(cx, cy, r, a0, a1, color, lw = 3, dash = null) {
+    const { ctx } = this;
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw;
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.arc(this.wx(cx), this.wy(cy), r * this.s, -a0, -a1, true);
+    ctx.stroke(); ctx.restore();
+  }
+  sector(cx, cy, r, a0, a1, color, alpha = 1) {
+    const { ctx } = this;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(this.wx(cx), this.wy(cy));
+    ctx.arc(this.wx(cx), this.wy(cy), r * this.s, -a0, -a1, true);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  arrow(x0, y0, x1, y1, color, lw = 4) {
+    const { ctx } = this;
+    const X0 = this.wx(x0), Y0 = this.wy(y0), X1 = this.wx(x1), Y1 = this.wy(y1);
+    const t = Math.atan2(Y1 - Y0, X1 - X0), L = 22;
+    ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(X0, Y0);
+    ctx.lineTo(X1 - L * 0.8 * Math.cos(t), Y1 - L * 0.8 * Math.sin(t)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X1, Y1);
+    ctx.lineTo(X1 - L * Math.cos(t - 0.42), Y1 - L * Math.sin(t - 0.42));
+    ctx.lineTo(X1 - L * Math.cos(t + 0.42), Y1 - L * Math.sin(t + 0.42));
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  box(x0, y0, x1, y1, fill, stroke, lw = 3) {
+    const { ctx } = this;
+    const X = this.wx(Math.min(x0, x1)), Y = this.wy(Math.max(y0, y1));
+    const w = Math.abs(this.wx(x1) - this.wx(x0)), h = Math.abs(this.wy(y1) - this.wy(y0));
+    ctx.save(); ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(X, Y, w, h, 16) : ctx.rect(X, Y, w, h);
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); ctx.restore();
+  }
+  label(x, y, str, color = cssVar('--c-ink'), size = 30, weight = 400, align = 'center') {
+    const { ctx } = this;
+    ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = 'middle';
+    ctx.font = `${weight} ${size}px "IBM Plex Sans KR","IBM Plex Sans",sans-serif`;
+    ctx.fillText(str, this.wx(x), this.wy(y));
+    ctx.textBaseline = 'alphabetic';
+  }
+  /* 기울임 글자 + 아래 첨자 (예: P_a), 가운데 정렬 */
+  labelSub(x, y, base, sub, color = cssVar('--c-ink')) {
+    const { ctx } = this;
+    const fb = 'italic 600 34px "IBM Plex Sans",sans-serif', fs = 'italic 600 28px "IBM Plex Sans",sans-serif';
+    ctx.font = fb; const wb = ctx.measureText(base).width;
+    ctx.font = fs; const ws = sub ? ctx.measureText(sub).width + 2 : 0;
+    const X = this.wx(x) - (wb + ws) / 2, Y = this.wy(y);
+    ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = fb; ctx.fillText(base, X, Y);
+    if (sub) { ctx.font = fs; ctx.fillText(sub, X + wb + 2, Y + 12); }
+    ctx.textBaseline = 'alphabetic';
+  }
+}
+
+const $ = id => document.getElementById(id);
+const CURVES = () => ['--g-curve-1', '--g-curve-2', '--g-curve-3'].map(cssVar);
+
+/* ----- 단위원 공통: 가로세로 비율 1:1 ----- */
+function unitGraph(id) {
+  const c = $(id); if (!c) return null;
+  const W = +(c.dataset.w || c.width), H = +(c.dataset.h || c.height);
+  const xMin = -0.16, xMax = 1.34, yMin = -0.16;
+  return new DeckGraph(id, { xMin, xMax, yMin, yMax: yMin + (xMax - xMin) * H / W });
+}
+function unitBase(g) {
+  const axis = cssVar('--g-axis'), ref = cssVar('--g-ref');
   g.clear();
-  gFill(g, [O, A, T], c2, 0.14);
-  gSector(g, 1, 0, X, c3, 0.22);
-  gFill(g, [O, A, P], c1, 0.30);
-  gArc(g, 1, 0, Math.PI / 2, cssVar('--g-axis'), 2);
-  gPath(g, [O, A, T, O], c2, 3);
-  gArc(g, 1, 0, X, c3, 4);
-  gPath(g, [O, P, A], c1, 3);
-  gLine(g, P, H, cssVar('--g-ref'), 3, true);
-  gArc(g, 0.16, 0, X, ink, 2);
-  g.text(0, 0, 'O', ink, -34, 36);
-  g.text(1, 0, 'A', ink, 10, 36);
-  g.text(P[0], P[1], 'P', ink, -38, -14);
-  g.text(T[0], T[1], 'T', ink, 14, 10);
-  g.text(1, T[1] / 2, 'tan x', c2, 14, 10);
-  const m = pt(X / 2);
-  g.text(m[0] * 0.2, m[1] * 0.2, 'x', ink, 6, 10);
-  g.dot(1, 0, ink, 7); g.dot(T[0], T[1], ink, 7);
-  g.dot(P[0], P[1], cssVar('--g-point'));
+  g.line(0, 0, g.xMax - 0.04, 0, axis, 2);
+  g.line(0, 0, 0, g.yMax - 0.04, axis, 2);
+  g.arc(0, 0, 1, 0, Math.PI / 2, ref, 2, [10, 8]);
+}
+function unitMarks(g, x, { angle = true, P = 'P', A = true } = {}) {
+  const ink = cssVar('--c-ink'), muted = cssVar('--c-muted');
+  if (angle) {
+    g.arc(0, 0, 0.17, 0, x, muted, 2);
+    g.label(0.25 * Math.cos(x / 2), 0.25 * Math.sin(x / 2), 'x', muted, 30, 600);
+  }
+  g.circle(0, 0, 6, ink);
+  g.label(-0.07, -0.07, 'O', ink, 30, 600);
+  if (A) g.label(1.02, -0.08, 'A', ink, 30, 600);
+  if (P) g.label(1.1 * Math.cos(x), 1.1 * Math.sin(x), P, ink, 30, 600);
+}
+
+/* ===== 넓이 비교 (정석의 그림) ===== */
+function drawArea(x = 0.7) {
+  const g = unitGraph('g-area'); if (!g) return;
+  const [c1, c2, c3] = CURVES();
+  const P = [Math.cos(x), Math.sin(x)], T = [1, Math.tan(x)];
+  unitBase(g);
+  g.fillPoly([[0, 0], [1, 0], T], c3, 0.08);
+  g.sector(0, 0, 1, 0, x, c2, 0.10);
+  g.fillPoly([[0, 0], [1, 0], P], c1, 0.12);
+  g.path([[0, 0], [1, 0], T, [0, 0]], c3, 3);
+  g.path([[0, 0], [1, 0], P, [0, 0]], c1, 3);
+  g.arc(0, 0, 1, 0, x, c2, 5);
+  unitMarks(g, x, { P: null });
+  g.label(1.1 * Math.cos(x + 0.1), 1.1 * Math.sin(x + 0.1), 'P', cssVar('--c-ink'), 30, 600);
+  g.label(1.08, T[1], 'T', cssVar('--c-ink'), 30, 600);
 }
 function initArea() {
-  const s = document.getElementById('area-slider'); if (!s) return;
-  const v = document.getElementById('area-value'), info = document.getElementById('area-info');
+  const s = $('area-slider'); if (!s) return;
   const upd = () => {
-    const X = +s.value;
-    v.textContent = X.toFixed(2);
-    drawArea(X);
-    info.innerHTML = `½ sin x = <strong>${fmt3(Math.sin(X) / 2)}</strong>`
-      + `<br>½ x = <strong>${fmt3(X / 2)}</strong>`
-      + `<br>½ tan x = <strong>${fmt3(Math.tan(X) / 2)}</strong>`
-      + `<br>sin x / x = <strong>${fmt3(Math.sin(X) / X)}</strong>`;
+    const x = +s.value;
+    $('area-value').textContent = x.toFixed(2);
+    drawArea(x);
+    $('area-info').innerHTML = `sin x / x = <strong>${(Math.sin(x) / x).toFixed(3)}</strong>`;
   };
   s.addEventListener('input', upd); upd();
 }
 
-/* 11. 호의 길이 (슬라이더: 꺾은선 조각 수 n) */
-const ARC_X = 1.2;
-function drawArcLen(n) {
-  const g = circleGraph('g-arc', 1.12); if (!g) return;
-  const c1 = cssVar('--g-curve-1'), ink = cssVar('--c-ink'), ax = cssVar('--g-axis');
-  g.clear();
-  gLine(g, [0, 0], [1, 0], ax, 2); gLine(g, [0, 0], pt(ARC_X), ax, 2);
-  gArc(g, 1, 0, ARC_X, cssVar('--g-ref'), 3);
-  const pts = Array.from({ length: n + 1 }, (_, k) => pt(ARC_X * k / n));
-  gPath(g, pts, c1, 4);
-  pts.forEach(p => g.dot(p[0], p[1], c1, n > 12 ? 5 : 8));
-  const P = pt(ARC_X);
-  g.text(0, 0, 'O', ink, -34, 36);
-  g.text(1, 0, 'A', ink, 10, 36);
-  g.text(P[0], P[1], 'P', ink, -12, -22);
+/* ===== 사분원의 넓이 ===== */
+function drawQuarter() {
+  const g = unitGraph('g-quarter'); if (!g) return;
+  const [c1] = CURVES();
+  unitBase(g);
+  const pts = [[0, 0]];
+  for (let i = 0; i <= 200; i++) { const x = i / 200; pts.push([x, Math.sqrt(1 - x * x)]); }
+  g.fillPoly(pts, c1, 0.16);
+  g.path(pts.slice(1), c1, 4);
+  g.circle(0, 0, 6, cssVar('--c-ink'));
+  g.label(-0.07, -0.07, 'O', cssVar('--c-ink'), 30, 600);
+  g.label(1, -0.08, '1', cssVar('--g-tick'), 30);
+  g.label(-0.07, 1, '1', cssVar('--g-tick'), 30);
+  g.label(0.82, 0.86, 'y = √(1 − x²)', c1, 32, 600, 'left');
+  g.label(0.38, 0.38, 'π / 4', c1, 40, 600);
 }
-function initArcLen() {
-  const s = document.getElementById('arc-slider'); if (!s) return;
-  const v = document.getElementById('arc-value'), info = document.getElementById('arc-info');
+
+/* ===== 근거의 연쇄 ===== */
+const CYCLE_NODES = [
+  [260, 450, '(sin x)′ = cos x'],
+  [870, 450, 'lim  sin x / x = 1'],
+  [1480, 450, '부채꼴 넓이  ½r²θ'],
+  [1480, 130, '원의 넓이  πr²'],
+  [870, 130, '정적분  ∫ √(1 − x²) dx'],
+  [260, 130, '치환  x = sin θ'],
+];
+/* 끊을 수 있는 고리: 화살표 번호(i → i+1) → 표시 번호 */
+const CYCLE_CUTS = { 1: '①', 2: '②', 3: '③' };
+function drawCycleOn(id, withCuts) {
+  const g = new DeckGraph(id, { xMin: 0, xMax: 1740, yMin: 0, yMax: 580 });
+  if (!g.canvas) return;
+  const ink = cssVar('--c-ink'), white = cssVar('--c-white'), border = cssVar('--c-border');
+  const c1 = cssVar('--g-curve-1'), red = cssVar('--c-red'), point = cssVar('--g-point');
+  const BW = 230, BH = 62;
+  g.clear();
+  CYCLE_NODES.forEach(([ax, ay], i) => {
+    const [bx, by] = CYCLE_NODES[(i + 1) % 6], col = i === 5 ? red : c1;
+    let p0, p1;
+    if (ay === by) {
+      const d = Math.sign(bx - ax);
+      p0 = [ax + d * (BW + 8), ay]; p1 = [bx - d * (BW + 14), by];
+    } else {
+      const d = Math.sign(by - ay);
+      p0 = [ax, ay + d * (BH + 8)]; p1 = [bx, by - d * (BH + 14)];
+    }
+    g.arrow(p0[0], p0[1], p1[0], p1[1], col, 4);
+    if (withCuts && CYCLE_CUTS[i]) {
+      const mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2;
+      const s = 16;
+      g.line(mx - s, my - s, mx + s, my + s, point, 6);
+      g.line(mx - s, my + s, mx + s, my - s, point, 6);
+      if (ay === by) g.label(mx, my + 44, CYCLE_CUTS[i], point, 40, 600);
+      else g.label(mx - 44, my, CYCLE_CUTS[i], point, 40, 600);
+    }
+  });
+  g.label(290, 290, 'dx = cos θ dθ', red, 32, 600, 'left');
+  CYCLE_NODES.forEach(([x, y, t], i) => {
+    g.box(x - BW, y - BH, x + BW, y + BH, white, i === 0 ? red : border, i === 0 ? 4 : 2);
+    g.label(x, y, t, ink, 36, 600);
+  });
+}
+
+/* ===== 새 근거의 연쇄: 되돌아오는 화살표 없음 ===== */
+const CHAIN_NODES = ['(sin x)′ = cos x', 'lim  sin x / x = 1', 'sin x < x ≤ tan x', '호의 길이 정의'];
+const CHAIN_TOOLS = ['합을 곱으로', '조임 정리', '삼각부등식 · 덧셈정리'];
+function drawChain() {
+  const g = new DeckGraph('g-chain', { xMin: 0, xMax: 1740, yMin: 0, yMax: 440 });
+  if (!g.canvas) return;
+  const ink = cssVar('--c-ink'), white = cssVar('--c-white'), border = cssVar('--c-border');
+  const muted = cssVar('--c-muted'), c1 = cssVar('--g-curve-1'), green = cssVar('--c-green');
+  const BW = 185, BH = 62, gap = (1740 - 8 * BW - 20) / 3, y = 270;
+  const cx = i => 10 + BW + i * (2 * BW + gap);
+  g.clear();
+  for (let i = 0; i < 3; i++) {
+    g.arrow(cx(i) + BW + 8, y, cx(i + 1) - BW - 12, y, c1, 4);
+    g.label((cx(i) + cx(i + 1)) / 2, y - BH - 50, CHAIN_TOOLS[i], muted, 30, 600);
+  }
+  CHAIN_NODES.forEach((t, i) => {
+    const last = i === 3;
+    g.box(cx(i) - BW, y - BH, cx(i) + BW, y + BH, white, last ? green : border, last ? 4 : 2);
+    g.label(cx(i), y, t, ink, 34, 600);
+  });
+  g.label(cx(3), y + BH + 48, '정의 (출발점)', green, 30, 600);
+}
+
+/* ===== 호의 길이: 꺾은선 n조각 (슬라이더) ===== */
+const ARC_X = 1;
+function drawArcDef(n) {
+  const g = unitGraph('g-arcdef'); if (!g) return;
+  const c1 = cssVar('--g-curve-1');
+  unitBase(g);
+  g.arc(0, 0, 1, 0, ARC_X, cssVar('--c-ink'), 5);
+  const pts = [];
+  for (let k = 0; k <= n; k++) pts.push([Math.cos(k * ARC_X / n), Math.sin(k * ARC_X / n)]);
+  g.path(pts, c1, 4);
+  pts.forEach(([a, b]) => g.circle(a, b, n > 12 ? 5 : 7, c1));
+  unitMarks(g, ARC_X, { angle: false });
+}
+function initArcDef() {
+  const s = $('arc-slider'); if (!s) return;
   const btns = [...document.querySelectorAll('.preset-btn[data-arc]')];
   const upd = () => {
     const n = +s.value;
-    v.textContent = n;
-    drawArcLen(n);
+    $('arc-value').textContent = n;
+    drawArcDef(n);
     btns.forEach(b => b.classList.toggle('active', +b.dataset.arc === n));
     const L = 2 * n * Math.sin(ARC_X / (2 * n));
-    info.innerHTML = `꺾은선 길이 = <strong>${fmt4(L)}</strong>`
-      + `<br>호의 길이 x = <strong>${fmt4(ARC_X)}</strong>`;
+    $('arc-info').innerHTML = `꺾은선 길이 = <strong>${L.toFixed(4)}</strong><br>호의 길이 x = <strong>${ARC_X.toFixed(4)}</strong>`;
   };
   btns.forEach(b => b.addEventListener('click', () => { s.value = b.dataset.arc; upd(); }));
   s.addEventListener('input', upd); upd();
 }
 
-/* 12. sin x < x (정적 그림) */
-function drawSinIneq() {
-  const X = 0.9, g = circleGraph('g-sin', 1.12); if (!g) return;
-  const O = [0, 0], A = [1, 0], P = pt(X), H = [P[0], 0];
-  const c1 = cssVar('--g-curve-1'), c2 = cssVar('--g-curve-2'), c3 = cssVar('--g-curve-3');
-  const ink = cssVar('--c-ink'), ax = cssVar('--g-axis');
-  g.clear();
-  gArc(g, 1, 0, Math.PI / 2, ax, 2);
-  gPath(g, [P, O, A], cssVar('--g-branch'), 3);
-  gArc(g, 1, 0, X, c3, 5);
-  gLine(g, P, A, c2, 5);
-  gLine(g, P, H, c1, 5);
-  const s = 0.05;
-  gPath(g, [[H[0] + s, 0], [H[0] + s, s], [H[0], s]], ink, 2);
-  gArc(g, 0.16, 0, X, ink, 2);
-  const m = pt(X / 2);
-  g.text(m[0] * 0.2, m[1] * 0.2, 'x', ink, 6, 10);
-  g.text(0, 0, 'O', ink, -34, 36);
-  g.text(1, 0, 'A', ink, 10, 36);
-  g.text(H[0], 0, 'H', ink, -10, 36);
-  g.text(P[0], P[1], 'P', ink, -38, -14);
-  g.text(H[0], P[1] / 2, 'sin x', c1, -100, 10);
-  g.text((P[0] + 1) / 2, P[1] / 2, 'AP', c2, -64, 4);
-  g.text(m[0], m[1], '호 x', c3, 16, -4);
-  g.dot(P[0], P[1], cssVar('--g-point'));
+/* ===== sin x < x ===== */
+function drawSinX() {
+  const x = 0.8;
+  const g = unitGraph('g-sinx'); if (!g) return;
+  const [c1, c2, c3] = CURVES();
+  const ink = cssVar('--c-ink'), muted = cssVar('--c-muted');
+  const P = [Math.cos(x), Math.sin(x)], H = [Math.cos(x), 0];
+  unitBase(g);
+  g.line(0, 0, P[0], P[1], muted, 2);
+  g.arc(0, 0, 1, 0, x, c3, 5);
+  g.line(1, 0, P[0], P[1], c2, 4);
+  g.line(H[0], 0, P[0], P[1], c1, 5);
+  const q = 0.04;
+  g.path([[H[0] - q, 0], [H[0] - q, q], [H[0], q]], muted, 2);
+  unitMarks(g, x);
+  g.label(H[0], -0.08, 'H', ink, 30, 600);
+  g.label(H[0] - 0.13, P[1] / 2, 'sin x', c1, 30, 600);
+  g.label(1.05 * Math.cos(x / 2) + 0.07, 1.05 * Math.sin(x / 2) + 0.03, '호 x', c3, 30, 600);
 }
 
-/* 13. x ≤ tan x (슬라이더: 꺾은선 조각 수 n) */
-const SH_X = 1.0;
-function drawShadow(n) {
-  const g = circleGraph('g-shadow', 1.7); if (!g) return;
-  const c1 = cssVar('--g-curve-1'), c2 = cssVar('--g-curve-2');
-  const ink = cssVar('--c-ink'), ax = cssVar('--g-axis'), ref = cssVar('--g-ref');
-  g.clear();
-  gArc(g, 1, 0, Math.PI / 2, ax, 2);
-  gLine(g, [0, 0], [1, 0], cssVar('--g-branch'), 3);
-  gLine(g, [1, 0], [1, 1.66], ax, 2);
-  const angs = Array.from({ length: n + 1 }, (_, k) => SH_X * k / n);
-  const P = angs.map(pt), Q = angs.map(a => [1, Math.tan(a)]);
-  Q.forEach(q => gLine(g, [0, 0], q, ref, 2, true));
-  gLine(g, [1, 0], [1, Math.tan(SH_X)], c2, 6);
-  gPath(g, P, c1, 4);
-  const r = n > 10 ? 5 : 7;
-  Q.forEach(q => g.dot(q[0], q[1], c2, r));
-  P.forEach(p => g.dot(p[0], p[1], c1, r));
-  g.text(0, 0, 'O', ink, -34, 36);
-  g.text(1, 0, 'A', ink, 10, 36);
-  g.text(1, Math.tan(SH_X), 'T', ink, 16, 10);
-  const E = P[n];
-  g.text(E[0], E[1], 'P', ink, -40, -12);
+/* ===== 접선으로의 투영 (슬라이더: 조각 수 n) ===== */
+const PROJ_X = 0.9;
+const SUB = k => String(k).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+function drawProj(n) {
+  const x = PROJ_X;
+  const g = unitGraph('g-proj'); if (!g) return;
+  const [c1, c2] = CURVES();
+  const ref = cssVar('--g-ref'), ink = cssVar('--c-ink');
+  unitBase(g);
+  g.line(1, -0.06, 1, g.yMax - 0.04, ref, 2);
+  const P = [], Q = [];
+  for (let k = 0; k <= n; k++) {
+    const t = k * x / n;
+    P.push([Math.cos(t), Math.sin(t)]); Q.push([1, Math.tan(t)]);
+  }
+  Q.forEach(([a, b]) => g.line(0, 0, a, b, ref, 1.5, [8, 8]));
+  Q.forEach(([a, b], k) => { if (k) g.line(1, Q[k - 1][1], a, b, c2, 7); });
+  g.path(P, c1, 4);
+  const r = n > 8 ? 5 : 7;
+  P.forEach(([a, b]) => g.circle(a, b, r, c1));
+  Q.forEach(([a, b]) => g.circle(a, b, r, c2));
+  unitMarks(g, x, { angle: false, P: null, A: false });
+  if (n <= 4) {
+    for (let k = 1; k < n; k++) {
+      const t = k * x / n;
+      g.labelSub(0.86 * Math.cos(t) - 0.02, 0.86 * Math.sin(t), 'P', String(k), c1);
+      g.labelSub(1.12, Math.tan(t), 'Q', String(k), c2);
+    }
+    g.labelSub(1.1 * Math.cos(x) - 0.04, 1.1 * Math.sin(x), 'P', String(n), c1);
+    g.label(1.04, Math.tan(x), 'T = Q' + SUB(n), ink, 30, 600, 'left');
+    g.label(1.04, -0.08, 'A = Q₀', ink, 30, 600, 'left');
+  } else {
+    g.label(1.04, Math.tan(x), 'T', ink, 30, 600, 'left');
+    g.label(1.04, -0.08, 'A', ink, 30, 600, 'left');
+  }
 }
-function initShadow() {
-  const s = document.getElementById('shadow-slider'); if (!s) return;
-  const v = document.getElementById('shadow-value'), info = document.getElementById('shadow-info');
+function initProj() {
+  const s = $('proj-slider'); if (!s) return;
   const upd = () => {
     const n = +s.value;
-    v.textContent = n;
-    drawShadow(n);
-    const L = 2 * n * Math.sin(SH_X / (2 * n));
-    info.innerHTML = `꺾은선 길이 = <strong>${fmt4(L)}</strong>`
-      + `<br>호의 길이 x = <strong>${fmt4(SH_X)}</strong>`
-      + `<br>그림자 합 tan x = <strong>${fmt4(Math.tan(SH_X))}</strong>`;
+    $('proj-value').textContent = n;
+    drawProj(n);
+    const L = 2 * n * Math.sin(PROJ_X / (2 * n));
+    $('proj-info').innerHTML = `꺾은선 길이 = <strong>${L.toFixed(4)}</strong>`
+      + `<br>호의 길이 x = <strong>${PROJ_X.toFixed(4)}</strong>`
+      + `<br>그림자 합 tan x = <strong>${Math.tan(PROJ_X).toFixed(4)}</strong>`;
   };
   s.addEventListener('input', upd); upd();
 }
 
+/* ===== 조각 하나 확대 ===== */
+function drawPiece() {
+  const a = 0.3, b = 0.85, m = (a + b) / 2;
+  const g = unitGraph('g-piece'); if (!g) return;
+  const [c1, c2] = CURVES();
+  const ref = cssVar('--g-ref'), muted = cssVar('--c-muted'), ink = cssVar('--c-ink');
+  const Pa = [Math.cos(a), Math.sin(a)], Pb = [Math.cos(b), Math.sin(b)];
+  const Qa = [1, Math.tan(a)], Qb = [1, Math.tan(b)];
+  const M = [(Pa[0] + Pb[0]) / 2, (Pa[1] + Pb[1]) / 2];
+  unitBase(g);
+  g.line(1, -0.06, 1, g.yMax - 0.04, ref, 2);
+  g.line(0, 0, Qa[0], Qa[1], muted, 2);
+  g.line(0, 0, Qb[0], Qb[1], muted, 2);
+  g.line(0, 0, M[0], M[1], muted, 2, [8, 8]);
+  /* M에서의 직각 표시 */
+  const u = [Math.cos(m), Math.sin(m)], v = [-Math.sin(m), Math.cos(m)], q = 0.035;
+  g.path([[M[0] - u[0] * q, M[1] - u[1] * q], [M[0] - u[0] * q + v[0] * q, M[1] - u[1] * q + v[1] * q],
+          [M[0] + v[0] * q, M[1] + v[1] * q]], muted, 2);
+  g.line(Qa[0], Qa[1], Qb[0], Qb[1], c2, 7);
+  g.line(Pa[0], Pa[1], Pb[0], Pb[1], c1, 5);
+  [Pa, Pb].forEach(p => g.circle(p[0], p[1], 7, c1));
+  [Qa, Qb].forEach(p => g.circle(p[0], p[1], 7, c2));
+  /* 각 a, h, h */
+  g.arc(0, 0, 0.16, 0, a, muted, 2);
+  g.label(0.24 * Math.cos(a / 2), 0.24 * Math.sin(a / 2), 'a', muted, 30, 600);
+  g.arc(0, 0, 0.3, a, m, muted, 2);
+  g.arc(0, 0, 0.34, m, b, muted, 2);
+  g.label(0.4 * Math.cos((a + m) / 2), 0.4 * Math.sin((a + m) / 2), 'h', muted, 30, 600);
+  g.label(0.44 * Math.cos((m + b) / 2), 0.44 * Math.sin((m + b) / 2), 'h', muted, 30, 600);
+  g.circle(0, 0, 6, ink);
+  g.label(-0.07, -0.07, 'O', ink, 30, 600);
+  g.labelSub(Pa[0] - 0.1, Pa[1] - 0.05, 'P', 'a', c1);
+  g.labelSub(Pb[0] - 0.1, Pb[1] + 0.02, 'P', 'b', c1);
+  g.labelSub(1.12, Qa[1], 'Q', 'a', c2);
+  g.labelSub(1.12, Qb[1], 'Q', 'b', c2);
+  g.label(M[0] - 0.08, M[1] - 0.03, 'M', ink, 30, 600);
+}
+
 function drawAllGraphs() {
-  initArea(); initArcLen(); drawSinIneq(); initShadow();
+  initArea(); drawQuarter(); drawCycleOn('g-cycle', false); drawCycleOn('g-cut', true); drawChain();
+  initArcDef(); drawSinX(); initProj(); drawPiece();
 }
 
 /* ---------- Init ---------- */
