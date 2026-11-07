@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>균등분포 수열과 정적분</title>
+  <title>삼각함수 미분의 출발점</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="slide.css">
 </head>
@@ -13,10 +13,10 @@
     <!-- 1. 표지 -->
     <div class="slide slide-cover">
       <div class="cover-inner">
-        <div class="cover-tag">미적분Ⅱ · 교과 발표</div>
-        <h1 class="cover-title">균등분포 수열과 정적분</h1>
-        <p class="cover-sub">정적분과 급수의 합 사이의 관계에서 정규수까지</p>
-        <div class="cover-meta"><div>[이름]</div><div>2026. 11</div></div>
+        <div class="cover-tag">미적분Ⅱ</div>
+        <h1 class="cover-title">\((\sin x)' = \cos x\) 증명의 순환 문제</h1>
+        <p class="cover-sub">순환 논증과 해결법</p>
+        <div class="cover-meta"><div>김서혁, 손영우</div></div>
       </div>
       <div class="cover-line"></div>
     </div>
@@ -27,404 +27,294 @@
       <div class="content-zone">
         <ol class="toc-list">
           <li class="toc-item"><span class="toc-num">01</span><span class="toc-text">문제 제기</span></li>
-          <li class="toc-item"><span class="toc-num">02</span><span class="toc-text">균등분포</span></li>
-          <li class="toc-item"><span class="toc-num">03</span><span class="toc-text">정적분 근사</span></li>
-          <li class="toc-item"><span class="toc-num">04</span><span class="toc-text">정규수</span></li>
-          <li class="toc-item"><span class="toc-num">05</span><span class="toc-text">자릿수와 분포</span></li>
-          <li class="toc-item"><span class="toc-num">06</span><span class="toc-text">미해결 문제</span></li>
+          <li class="toc-item"><span class="toc-num">02</span><span class="toc-text">교과서 증명</span></li>
+          <li class="toc-item"><span class="toc-num">03</span><span class="toc-text">근거 추적</span></li>
+          <li class="toc-item"><span class="toc-num">04</span><span class="toc-text">정의의 선택</span></li>
+          <li class="toc-item"><span class="toc-num">05</span><span class="toc-text">호의 길이</span></li>
+          <li class="toc-item"><span class="toc-num">06</span><span class="toc-text">부등식 증명</span></li>
           <li class="toc-item"><span class="toc-num">07</span><span class="toc-text">정리</span></li>
         </ol>
       </div>
     </div>
 
-    <!-- 3. 정적분과 급수의 합 (시뮬레이션: 직사각형 n개) -->
+    <!-- 3. 출발 질문 -->
     <div class="slide" data-section="1">
-      <div class="title-zone">
-        <h1 class="slide-title">정적분과 급수의 합</h1>
-        <p class="slide-subtitle">\(f(x) = x^2,\ 0 \le x \le 1\)</p>
-      </div>
-      <div class="content-zone">
-        <div class="cols">
-          <div class="graph-wrap"><canvas id="g-riemann" width="1040" height="600"></canvas></div>
-          <div class="col controls">
-            <div class="display-math-sm">\(\displaystyle \frac{1}{n}\sum_{k=1}^{n} \left(\frac{k}{n}\right)^{2}\)</div>
-            <div class="slider-row">
-              <span class="slider-label">\(n\)</span>
-              <input type="range" id="riemann-slider" min="1" max="100" step="1" value="5">
-              <span class="slider-value" id="riemann-value">5</span>
-            </div>
-            <div class="preset-row">
-              <button class="preset-btn" id="riemann-play">재생</button>
-            </div>
-            <div class="info-line" id="riemann-info"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. 평균으로서의 해석 -->
-    <div class="slide" data-section="1">
-      <div class="title-zone"><h1 class="slide-title">평균으로서의 해석</h1></div>
-      <div class="content-zone">
-        <div class="display-math">\(\displaystyle \lim_{n\to\infty}\frac{1}{n}\sum_{k=1}^{n} f\!\left(\frac{k}{n}\right) = \int_0^1 f(x)\,dx\)</div>
-        <div class="rows">
-          <div class="row"><div class="row-term">좌변</div><div class="row-desc">분점 \(\tfrac{1}{n}, \tfrac{2}{n}, \ldots, \tfrac{n}{n}\)에서 구한 함숫값 \(n\)개의 평균</div></div>
-          <div class="row"><div class="row-term">우변</div><div class="row-desc">길이 1인 구간 \([0, 1]\)에서 \(f\)의 평균값</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. 분점의 조건 -->
-    <div class="slide" data-section="1">
-      <div class="title-zone"><h1 class="slide-title">분점의 조건</h1></div>
+      <div class="title-zone"><h1 class="slide-title">출발 질문</h1></div>
       <div class="content-zone center">
-        <div class="display-math txt-center">\[x_k = \frac{k}{n} \qquad\longrightarrow\qquad x_k = \ ?\]</div>
-      </div>
-    </div>
-
-    <!-- 6. 균등분포의 정의 -->
-    <div class="slide" data-section="2">
-      <div class="title-zone"><h1 class="slide-title">균등분포의 정의</h1></div>
-      <div class="content-zone split">
-        <div class="panel">
-          <div class="panel-title">정의</div>
-          <p class="info-line">수열 \(x_1, x_2, x_3, \ldots\) \((0 \le x_k < 1)\)이 다음을 만족하면 \([0, 1]\)에서 균등분포한다고 한다.</p>
-          <div class="display-math" style="margin-top: 28px;">\(\displaystyle \lim_{N\to\infty} \frac{\#\{\,k \le N : a \le x_k < b\,\}}{N} = b - a \qquad (0 \le a < b \le 1)\)</div>
-        </div>
-        <div class="rows">
-          <div class="row"><div class="row-term">\(\#\{\ \}\)</div><div class="row-desc">조건을 만족하는 \(k\)의 개수</div></div>
-          <div class="row"><div class="row-term">\(\{x\}\)</div><div class="row-desc">\(x\)의 소수 부분 &nbsp;(예: \(\{\sqrt{2}\} = 0.4142\ldots\))</div></div>
+        <div class="rows lg">
+          <div class="row" style="grid-template-columns: 520px 1fr;"><div class="row-term">\((\sin x)' = \cos x\)</div><div class="row-desc">근거: \(\displaystyle\lim_{x\to 0}\frac{\sin x}{x} = 1\)</div></div>
+          <div class="row" style="grid-template-columns: 520px 1fr;"><div class="row-term">\(\displaystyle\lim_{x\to 0}\frac{\sin x}{x} = 1\)</div><div class="row-desc">근거: 부채꼴의 넓이 \(\tfrac{1}{2}r^2\theta\) &nbsp;(수학의 정석, 넓이 비교)</div></div>
+          <div class="row" style="grid-template-columns: 520px 1fr;"><div class="row-term">부채꼴 넓이 \(\tfrac{1}{2}r^2\theta\)</div><div class="row-desc">근거: [ ? ]</div></div>
         </div>
       </div>
     </div>
 
-    <!-- 7. nα의 소수 부분 (시뮬레이션) -->
+    <!-- 4. 넓이 비교 -->
     <div class="slide" data-section="2">
       <div class="title-zone">
-        <h1 class="slide-title">nα의 소수 부분</h1>
-        <p class="slide-subtitle">점 \(\{\alpha\}, \{2\alpha\}, \ldots, \{N\alpha\}\)과 10개 구간의 비율</p>
+        <h1 class="slide-title">넓이 비교</h1>
+        <p class="slide-subtitle">단위원, \(0 &lt; x &lt; \tfrac{\pi}{2}\)</p>
       </div>
       <div class="content-zone">
         <div class="cols">
-          <div class="graph-wrap">
-            <canvas id="g-line" width="1040" height="170"></canvas>
-            <canvas id="g-hist" width="1040" height="420"></canvas>
-          </div>
-          <div class="col controls">
-            <div class="preset-row" id="alpha-presets">
-              <button class="preset-btn active" data-alpha="sqrt2">\(\alpha = \sqrt{2}\)</button>
-              <button class="preset-btn" data-alpha="pi">\(\alpha = \pi\)</button>
-              <button class="preset-btn" data-alpha="half">\(\alpha = 0.5\)</button>
-            </div>
-            <div class="slider-row">
-              <span class="slider-label">\(N\)</span>
-              <input type="range" id="na-slider" min="1" max="1000" step="1" value="20">
-              <span class="slider-value" id="na-value">20</span>
-            </div>
-            <div class="preset-row">
-              <button class="preset-btn" id="na-play">재생</button>
-            </div>
-            <div class="info-line" id="na-info"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 8. 점이 겹치지 않는 이유 -->
-    <div class="slide" data-section="2">
-      <div class="title-zone"><h1 class="slide-title">점이 겹치지 않는 이유</h1></div>
-      <div class="content-zone split">
-        <div style="display: flex; flex-direction: column; gap: 36px;">
-          <div class="display-math">\(\displaystyle \{n\sqrt{2}\} = \{m\sqrt{2}\}\ \ (n \ne m) \;\;\Longrightarrow\;\; (n - m)\sqrt{2} = p \in \mathbb{Z}\)</div>
-          <div class="display-math">\(\displaystyle \Longrightarrow\;\; \sqrt{2} = \frac{p}{n - m} \in \mathbb{Q} \qquad (\text{모순})\)</div>
-        </div>
-        <div class="rows">
-          <div class="row"><div class="row-term">균등분포</div><div class="row-desc">\(\alpha\)가 무리수이면 \(\{n\alpha\}\)는 균등분포<span class="src">P. Bohl, W. Sierpiński, H. Weyl (1909–1910)</span></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 9. x²의 평균 (시뮬레이션) -->
-    <div class="slide" data-section="3">
-      <div class="title-zone">
-        <h1 class="slide-title">x²의 평균</h1>
-        <p class="slide-subtitle">\(\frac{1}{N}\sum_{n=1}^{N} \{n\alpha\}^2\), 목표값 \(\int_0^1 x^2\,dx = \frac{1}{3}\)</p>
-      </div>
-      <div class="content-zone">
-        <div class="cols">
-          <div class="graph-wrap"><canvas id="g-avg" width="1040" height="600"></canvas></div>
+          <div class="graph-wrap"><canvas id="g-area" width="660" height="660"></canvas></div>
           <div class="col controls">
             <div class="legend vertical">
-              <div class="legend-item"><div class="legend-line c1"></div><span>\(\alpha = \sqrt{2}\)</span></div>
-              <div class="legend-item"><div class="legend-line c2"></div><span>\(\alpha = 0.5\)</span></div>
-              <div class="legend-item"><div class="legend-dash"></div><span>\(1/3\)</span></div>
+              <div class="legend-item"><div class="legend-line c1"></div><span>삼각형 OAP: \(\tfrac{1}{2}\sin x\)</span></div>
+              <div class="legend-item"><div class="legend-line c2"></div><span>부채꼴 OAP: \(\tfrac{1}{2}x\)</span></div>
+              <div class="legend-item"><div class="legend-line c3"></div><span>삼각형 OAT: \(\tfrac{1}{2}\tan x\)</span></div>
             </div>
-            <div class="slider-row">
-              <span class="slider-label">\(N\)</span>
-              <input type="range" id="avg-slider" min="0" max="1000" step="1" value="250">
-              <span class="slider-value" id="avg-value">1</span>
-            </div>
-            <div class="preset-row">
-              <button class="preset-btn" id="avg-play">재생</button>
-            </div>
-            <div class="info-line" id="avg-info"></div>
+            <div class="display-math-sm">\(\displaystyle \sin x &lt; x &lt; \tan x\)</div>
+            <div class="display-math-sm">\(\displaystyle \cos x &lt; \frac{\sin x}{x} &lt; 1 \;\Longrightarrow\; \lim_{x\to 0}\frac{\sin x}{x} = 1\)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 10. 계단함수의 경우 (시뮬레이션) -->
+    <!-- 5. 도함수 계산 -->
+    <div class="slide" data-section="2">
+      <div class="title-zone"><h1 class="slide-title">도함수 계산</h1></div>
+      <div class="content-zone split">
+        <div style="display: flex; flex-direction: column; gap: 44px;">
+          <div class="display-math">\(\displaystyle \frac{\sin(x+h) - \sin x}{h} = \cos\!\left(x + \frac{h}{2}\right) \cdot \frac{\sin(h/2)}{h/2}\)</div>
+          <div class="display-math">\(\displaystyle \lim_{h\to 0}\, \cos\!\left(x + \frac{h}{2}\right) \cdot \frac{\sin(h/2)}{h/2} = \cos x \cdot 1 = \cos x\)</div>
+        </div>
+        <div class="rows">
+          <div class="row"><div class="row-term">첫째 줄</div><div class="row-desc">\(\sin A - \sin B = 2\cos\frac{A+B}{2}\sin\frac{A-B}{2}\)</div></div>
+          <div class="row"><div class="row-term">둘째 줄</div><div class="row-desc">\(\displaystyle\lim_{t\to 0}\frac{\sin t}{t} = 1\) &nbsp;(넓이 비교)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. 교육과정 속 원의 넓이 -->
+    <div class="slide" data-section="3">
+      <div class="title-zone"><h1 class="slide-title">교육과정 속 원의 넓이</h1></div>
+      <div class="content-zone center">
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-label">초등학교 6학년</div><div class="tl-title">원의 넓이 \(\pi r^2\)</div><div class="tl-body">원을 잘게 잘라<br>직사각형 모양으로 재배열</div></div>
+          <div class="tl-item"><div class="tl-label">중학교 1학년</div><div class="tl-title">부채꼴 \(\tfrac{1}{2}rl\)</div><div class="tl-body">원의 넓이 ×<br>중심각의 비율</div></div>
+          <div class="tl-item"><div class="tl-label">수학Ⅰ</div><div class="tl-title">부채꼴 \(\tfrac{1}{2}r^2\theta\)</div><div class="tl-body">호도법으로<br>다시 표현</div></div>
+          <div class="tl-item key"><div class="tl-label">미적분Ⅱ</div><div class="tl-title">정적분</div><div class="tl-body">곡선으로 둘러싸인<br>넓이를 계산</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. 원의 넓이와 적분 -->
     <div class="slide" data-section="3">
       <div class="title-zone">
-        <h1 class="slide-title">계단함수의 경우</h1>
-        <p class="slide-subtitle">\(f(x) = 2\ (0 \le x < 0.3),\ \ f(x) = 5\ (0.3 \le x \le 1)\), 점 \(x_n = \{n\sqrt{2}\}\)</p>
+        <h1 class="slide-title">원의 넓이와 적분</h1>
+        <p class="slide-subtitle">사분원의 넓이, 치환 \(x = \sin\theta\)</p>
       </div>
       <div class="content-zone">
         <div class="cols">
-          <div class="graph-wrap"><canvas id="g-step" width="1040" height="600"></canvas></div>
-          <div class="col controls">
-            <div class="display-math-sm">\(\displaystyle \begin{aligned}\int_0^1 f(x)\,dx &= 2 \times 0.3 + 5 \times 0.7 \\ &= 4.1\end{aligned}\)</div>
-            <div class="slider-row">
-              <span class="slider-label">\(N\)</span>
-              <input type="range" id="step-slider" min="1" max="1000" step="1" value="10">
-              <span class="slider-value" id="step-value">10</span>
+          <div class="graph-wrap"><canvas id="g-quarter" width="600" height="600"></canvas></div>
+          <div class="col controls" style="gap: 44px;">
+            <div class="display-math-sm">\(\displaystyle \int_0^1 \sqrt{1 - x^2}\,dx = \int_0^{\pi/2} \sqrt{1-\sin^2\theta}\;\cos\theta\,d\theta\)</div>
+            <div class="display-math-sm">\(\displaystyle = \int_0^{\pi/2} \cos^2\theta\,d\theta = \frac{\pi}{4}\)</div>
+            <div class="rows">
+              <div class="row" style="grid-template-columns: 330px 1fr; gap: 32px;"><div class="row-term">\(dx = \cos\theta\,d\theta\)</div><div class="row-desc txt-red">\((\sin\theta)' = \cos\theta\) 사용</div></div>
             </div>
-            <div class="preset-row">
-              <button class="preset-btn" id="step-play">재생</button>
-            </div>
-            <div class="info-line" id="step-info"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 11. 균등분포와 정적분 -->
+    <!-- 8. 근거의 연쇄 -->
     <div class="slide" data-section="3">
-      <div class="title-zone"><h1 class="slide-title">균등분포와 정적분</h1></div>
-      <div class="content-zone center">
-        <div class="panel">
-          <div class="panel-title">결과</div>
-          <p class="info-line">\(x_1, x_2, \ldots\)가 \([0, 1]\)에서 균등분포하고 \(f\)가 \([0, 1]\)에서 연속이면</p>
-          <div class="display-math" style="margin-top: 28px;">\(\displaystyle \lim_{N\to\infty}\frac{1}{N}\sum_{k=1}^{N} f(x_k) = \int_0^1 f(x)\,dx\)</div>
-        </div>
+      <div class="title-zone">
+        <h1 class="slide-title">근거의 연쇄</h1>
+        <p class="slide-subtitle">A → B : A의 증명에 B를 사용</p>
+      </div>
+      <div class="content-zone">
+        <div class="graph-wrap"><canvas id="g-cycle" width="1740" height="580"></canvas></div>
       </div>
     </div>
 
-    <!-- 12. 정규수의 정의 -->
+    <!-- 9. 순환을 끊는 위치 -->
     <div class="slide" data-section="4">
-      <div class="title-zone"><h1 class="slide-title">정규수의 정의</h1></div>
+      <div class="title-zone">
+        <h1 class="slide-title">순환을 끊는 위치</h1>
+        <p class="slide-subtitle">①②③: 화살표 하나를 미분 없는 정의로 대체</p>
+      </div>
+      <div class="content-zone">
+        <div class="graph-wrap"><canvas id="g-cut" width="1740" height="580"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 10. 출발점 비교 -->
+    <div class="slide" data-section="4">
+      <div class="title-zone"><h1 class="slide-title">출발점 비교</h1></div>
       <div class="content-zone">
         <div class="panel">
-          <div class="panel-title">정의</div>
-          <p class="info-line">10진법 소수 전개에서 모든 길이 \(k\)의 숫자 묶음이 각각 비율 \(\dfrac{1}{10^k}\)로 나타나는 실수를 10진법 정규수라고 한다.</p>
+          <div class="panel-title">정석의 출발점</div>
+          <p class="info-line">원의 넓이 = 적분값 &nbsp;→&nbsp; 치환 \(x = \sin\theta\) &nbsp;→&nbsp; <span class="txt-red">\((\sin\theta)' = \cos\theta\) 사용</span></p>
         </div>
-        <div class="facts">
-          <div class="fact"><div class="fact-key">숫자 7</div><div class="fact-val">\(1/10\)</div></div>
-          <div class="fact"><div class="fact-key">묶음 37</div><div class="fact-val">\(1/100\)</div></div>
-          <div class="fact"><div class="fact-key">묶음 370</div><div class="fact-val">\(1/1000\)</div></div>
-          <div class="fact"><div class="fact-key">길이 \(k\)인 묶음</div><div class="fact-val">\(1/10^k\)</div></div>
+        <div class="rows">
+          <div class="row" style="grid-template-columns: 80px 1fr;"><div class="row-term">①</div><div class="row-desc">각의 크기 = 호의 길이<span class="src">끊는 화살표: 극한 → 부채꼴 넓이 &nbsp;·&nbsp; 넓이 대신 길이를 비교</span></div></div>
+          <div class="row" style="grid-template-columns: 80px 1fr;"><div class="row-term">②</div><div class="row-desc">각의 크기 = 부채꼴 넓이의 2배<span class="src">끊는 화살표: 부채꼴 넓이 → 원의 넓이 &nbsp;·&nbsp; \(\tfrac{1}{2}x\)가 정의 그 자체</span></div></div>
+          <div class="row" style="grid-template-columns: 80px 1fr;"><div class="row-term">③</div><div class="row-desc">원의 넓이 = 정다각형 넓이의 극한<span class="src">끊는 화살표: 원의 넓이 → 정적분 &nbsp;·&nbsp; 내접·외접 정다각형 사이에 끼우기</span></div></div>
         </div>
       </div>
     </div>
 
-    <!-- 13. 숫자 하나의 빈도 -->
-    <div class="slide" data-section="4">
-      <div class="title-zone"><h1 class="slide-title">숫자 하나의 빈도</h1></div>
+    <!-- 11. 증명 계획 -->
+    <div class="slide" data-section="5">
+      <div class="title-zone">
+        <h1 class="slide-title">증명 계획</h1>
+        <p class="slide-subtitle">① 호의 길이: 같은 그림, 넓이 대신 길이</p>
+      </div>
       <div class="content-zone">
         <div class="contrast">
           <div class="panel">
-            <div class="c-head">0.0123456789 0123456789 …</div>
-            <div class="c-item"><div class="c-big txt-green">각 숫자 0–9: 1/10</div><div class="c-desc">한 자리 기준 정확히 같은 비율</div></div>
-            <div class="c-item"><div class="c-big txt-red">묶음 00, 11, 22: 0회</div><div class="c-desc">두 자리 묶음 100종 중 10종만 등장</div></div>
+            <div class="c-head">정석: 넓이 비교</div>
+            <div class="c-item"><div class="c-big">\(\tfrac{1}{2}\sin x &lt; \tfrac{1}{2}x &lt; \tfrac{1}{2}\tan x\)</div><div class="c-desc">삼각형 OAP, 부채꼴 OAP, 삼각형 OAT</div></div>
+            <div class="c-item"><div class="c-big txt-red">부채꼴 넓이 필요</div><div class="c-desc">원의 넓이 → 적분 → \((\sin\theta)'\)</div></div>
           </div>
           <div class="panel">
-            <div class="c-head">1/7 = 0.142857 142857 …</div>
-            <div class="c-item"><div class="c-big txt-red">숫자 0, 3, 6, 9: 0회</div><div class="c-desc">순환마디 142857의 반복</div></div>
-            <div class="c-item"><div class="c-big">유리수</div><div class="c-desc">순환소수 → 정규수 아님</div></div>
+            <div class="c-head">이번 발표: 길이 비교</div>
+            <div class="c-item"><div class="c-big">\(\sin x &lt; x \le \tan x\)</div><div class="c-desc">선분 PH, 호 AP, 선분 AT</div></div>
+            <div class="c-item"><div class="c-big txt-green">호의 길이 정의만 필요</div><div class="c-desc">꺾은선, 삼각부등식, 덧셈정리</div></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 14. π의 숫자 빈도 (시뮬레이션) -->
-    <div class="slide" data-section="4">
-      <div class="title-zone">
-        <h1 class="slide-title">π의 숫자 빈도</h1>
-        <p class="slide-subtitle">소수점 아래 처음 \(D\)자리</p>
-      </div>
+    <!-- 10. 호의 길이의 정의 -->
+    <div class="slide" data-section="5">
+      <div class="title-zone"><h1 class="slide-title">호의 길이의 정의</h1></div>
       <div class="content-zone">
         <div class="cols">
-          <div class="graph-wrap"><canvas id="g-digits" width="1100" height="600"></canvas></div>
+          <div class="graph-wrap"><canvas id="g-arcdef" width="660" height="660"></canvas></div>
           <div class="col controls">
-            <div class="preset-row" id="digit-src">
-              <button class="preset-btn active" data-src="pi">π</button>
-              <button class="preset-btn" data-src="rep">0123456789 반복</button>
+            <div class="panel">
+              <div class="panel-title">정의</div>
+              <p class="info-line">호 AP의 길이 = 호 위에 꼭짓점을 둔 꺾은선 길이들의 상한</p>
             </div>
-            <div class="preset-row" id="digit-unit">
-              <button class="preset-btn active" data-unit="1">숫자 1개</button>
-              <button class="preset-btn" data-unit="2">두 자리 묶음</button>
-            </div>
-            <div class="slider-row">
-              <span class="slider-label">\(D\)</span>
-              <input type="range" id="digit-slider" min="0" max="1000" step="1" value="0">
-              <span class="slider-value" id="digit-value">100</span>
-            </div>
-            <div class="preset-row">
-              <button class="preset-btn" id="digit-play">재생</button>
-            </div>
-            <div class="info-line" id="digit-info"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 15. 10배와 자릿수 이동 (시뮬레이션) -->
-    <div class="slide" data-section="5">
-      <div class="title-zone">
-        <h1 class="slide-title">10배와 자릿수 이동</h1>
-        <p class="slide-subtitle">\(x = \pi - 3 = 0.d_1 d_2 d_3 \ldots\)</p>
-      </div>
-      <div class="content-zone">
-        <div class="cols">
-          <div class="graph-wrap"><canvas id="g-shift" width="1100" height="600"></canvas></div>
-          <div class="col controls">
-            <div class="display-math-sm">\(\displaystyle \{10^k x\} = 0.d_{k+1}d_{k+2}d_{k+3}\ldots\)</div>
-            <div class="slider-row">
-              <span class="slider-label">\(k\)</span>
-              <input type="range" id="shift-slider" min="0" max="18" step="1" value="0">
-              <span class="slider-value" id="shift-value">0</span>
-            </div>
-            <div class="info-line" id="shift-info"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 16. 숫자와 구간의 대응 -->
-    <div class="slide" data-section="5">
-      <div class="title-zone"><h1 class="slide-title">숫자와 구간의 대응</h1></div>
-      <div class="content-zone split">
-        <table class="data-table">
-          <thead><tr><th>자릿수 조건</th><th>\(\{10^k x\}\)의 위치</th><th>구간의 길이</th></tr></thead>
-          <tbody>
-            <tr><td>\(d_{k+1} = 3\)</td><td>\([0.3,\ 0.4)\)</td><td>\(1/10\)</td></tr>
-            <tr><td>\(d_{k+1}d_{k+2} = 37\)</td><td>\([0.37,\ 0.38)\)</td><td>\(1/100\)</td></tr>
-            <tr><td>\(d_{k+1}d_{k+2}d_{k+3} = 370\)</td><td>\([0.370,\ 0.371)\)</td><td>\(1/1000\)</td></tr>
-          </tbody>
-        </table>
-        <div class="rows">
-          <div class="row"><div class="row-term">예시</div><div class="row-desc">\(x = 0.14159\ldots,\ k = 2\):&nbsp; \(d_3 = 1\),&nbsp; \(\{100x\} = 0.159\ldots \in [0.1,\ 0.2)\)</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 17. 정규수와 균등분포 -->
-    <div class="slide" data-section="5">
-      <div class="title-zone"><h1 class="slide-title">정규수와 균등분포</h1></div>
-      <div class="content-zone">
-        <div class="panel">
-          <div class="panel-title">정리 (D. D. Wall, 1949)</div>
-          <p class="info-line">\(x\)가 10진법 정규수 \(\iff\) \(\{x\}, \{10x\}, \{10^2 x\}, \ldots\)가 \([0, 1]\)에서 균등분포</p>
-        </div>
-        <div class="display-math">\(\displaystyle \lim_{N\to\infty}\frac{1}{N}\sum_{k=0}^{N-1} f\!\left(\{10^k x\}\right) = \int_0^1 f(x)\,dx\)</div>
-        <p class="info-line txt-muted">\(x\): 10진법 정규수, \(f\): \([0, 1]\)에서 연속</p>
-      </div>
-    </div>
-
-    <!-- 18. 자릿수로 계산한 정적분 (시뮬레이션) -->
-    <div class="slide" data-section="5">
-      <div class="title-zone">
-        <h1 class="slide-title">자릿수로 계산한 정적분</h1>
-        <p class="slide-subtitle">\(\frac{1}{N}\sum_{k=0}^{N-1} \{10^k x\}^2\), 목표값 \(\frac{1}{3}\)</p>
-      </div>
-      <div class="content-zone">
-        <div class="cols">
-          <div class="graph-wrap"><canvas id="g-pi" width="1040" height="600"></canvas></div>
-          <div class="col controls">
             <div class="legend vertical">
-              <div class="legend-item"><div class="legend-line c1"></div><span>\(x = \pi - 3\)</span></div>
-              <div class="legend-item"><div class="legend-line c2"></div><span>챔퍼나운 상수</span></div>
-              <div class="legend-item"><div class="legend-dash"></div><span>\(1/3\)</span></div>
+              <div class="legend-item"><div class="legend-line c1"></div><span>조각 1개 (현): 0.9589</span></div>
+              <div class="legend-item"><div class="legend-line c2"></div><span>조각 2개: 0.9896</span></div>
+              <div class="legend-item"><div class="legend-line c3"></div><span>조각 4개: 0.9974</span></div>
+              <div class="legend-item"><div class="legend-line" style="background: var(--c-ink);"></div><span>호 (중심각 1): 1</span></div>
             </div>
-            <div class="slider-row">
-              <span class="slider-label">\(N\)</span>
-              <input type="range" id="pi-slider" min="0" max="1000" step="1" value="200">
-              <span class="slider-value" id="pi-value">1</span>
+            <div class="rows">
+              <div class="row" style="grid-template-columns: 160px 1fr; gap: 32px;"><div class="row-term">상한</div><div class="row-desc">모든 꺾은선 길이 이상인 수 중 가장 작은 값</div></div>
             </div>
-            <div class="preset-row">
-              <button class="preset-btn" id="pi-play">재생</button>
-            </div>
-            <div class="info-line" id="pi-info"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 19. 알려진 결과 -->
+    <!-- 12. sin x < x -->
     <div class="slide" data-section="6">
-      <div class="title-zone"><h1 class="slide-title">알려진 결과</h1></div>
+      <div class="title-zone"><h1 class="slide-title">sin x &lt; x</h1></div>
       <div class="content-zone">
-        <div class="timeline">
-          <div class="tl-item"><div class="tl-label">1909</div><div class="tl-title">보렐</div><div class="tl-body">거의 모든 실수는 모든 진법에서 정규수</div></div>
-          <div class="tl-item"><div class="tl-label">1933</div><div class="tl-title">챔퍼나운</div><div class="tl-body">0.123456789101112…<br>10진법 정규수</div></div>
-          <div class="tl-item"><div class="tl-label">1949</div><div class="tl-title">Wall</div><div class="tl-body">정규수 ⇔ \(\{10^k x\}\) 균등분포</div></div>
-          <div class="tl-item key"><div class="tl-label">현재</div><div class="tl-title">π, e, √2</div><div class="tl-body">정규성 미증명</div></div>
+        <div class="cols">
+          <div class="graph-wrap"><canvas id="g-sinx" width="660" height="660"></canvas></div>
+          <div class="col controls">
+            <div class="display-math-sm">\(\sin x = \overline{PH} &lt; \overline{AP} \le (\text{꺾은선}) \le x\)</div>
+            <div class="rows">
+              <div class="row" style="grid-template-columns: 300px 1fr; gap: 32px;"><div class="row-term">\(\overline{PH} &lt; \overline{AP}\)</div><div class="row-desc">직각삼각형의 빗변</div></div>
+              <div class="row" style="grid-template-columns: 300px 1fr; gap: 32px;"><div class="row-term">\(\overline{AP} \le\) 꺾은선</div><div class="row-desc">삼각부등식</div></div>
+              <div class="row" style="grid-template-columns: 300px 1fr; gap: 32px;"><div class="row-term">꺾은선 \(\le x\)</div><div class="row-desc">상한의 정의</div></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 20. 미해결 문제 -->
+    <!-- 13. 접선으로의 투영 -->
     <div class="slide" data-section="6">
-      <div class="title-zone"><h1 class="slide-title">미해결 문제</h1></div>
+      <div class="title-zone">
+        <h1 class="slide-title">접선으로의 투영</h1>
+        <p class="slide-subtitle">꼭짓점 \(P_k\)를 O에서 접선 위로 투영한 점 \(Q_k\)</p>
+      </div>
+      <div class="content-zone">
+        <div class="cols">
+          <div class="graph-wrap"><canvas id="g-proj" width="660" height="660"></canvas></div>
+          <div class="col controls">
+            <div class="display-math-sm">\(\overline{Q_0Q_1} + \overline{Q_1Q_2} + \overline{Q_2Q_3} = \overline{AT} = \tan x\)</div>
+            <div class="rows">
+              <div class="row" style="grid-template-columns: 200px 1fr; gap: 32px;"><div class="row-term">목표</div><div class="row-desc">조각마다 &nbsp;현 \(\overline{P_{k-1}P_k} \le\) 그림자 \(\overline{Q_{k-1}Q_k}\)</div></div>
+              <div class="row" style="grid-template-columns: 200px 1fr; gap: 32px;"><div class="row-term">결과</div><div class="row-desc">모든 꺾은선 길이 \(\le \tan x\)</div></div>
+              <div class="row" style="grid-template-columns: 200px 1fr; gap: 32px;"><div class="row-term">상한</div><div class="row-desc">\(x \le \tan x\)</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 14. 조각의 길이 -->
+    <div class="slide" data-section="6">
+      <div class="title-zone">
+        <h1 class="slide-title">조각의 길이</h1>
+        <p class="slide-subtitle">\(0 \le a &lt; b &lt; \tfrac{\pi}{2}\), &nbsp;\(h = \tfrac{b-a}{2}\)</p>
+      </div>
+      <div class="content-zone">
+        <div class="cols">
+          <div class="graph-wrap"><canvas id="g-piece" width="660" height="660"></canvas></div>
+          <div class="col controls">
+            <div class="rows">
+              <div class="row" style="grid-template-columns: 260px 1fr; gap: 32px;"><div class="row-term">현 \(\overline{P_aP_b}\)</div><div class="row-desc">\(2\,\overline{P_aM} = 2\sin h\)</div></div>
+              <div class="row" style="grid-template-columns: 260px 1fr; gap: 32px;"><div class="row-term">그림자 \(\overline{Q_aQ_b}\)</div><div class="row-desc">\(\displaystyle \begin{aligned} &amp;\tan b - \tan a \\ &amp;= \frac{\sin(b-a)}{\cos a\cos b} = \frac{2\sin h\cos h}{\cos a\cos b}\end{aligned}\)</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 15. 길이 비교 -->
+    <div class="slide" data-section="6">
+      <div class="title-zone"><h1 class="slide-title">길이 비교</h1></div>
+      <div class="content-zone split">
+        <div style="display: flex; flex-direction: column; gap: 44px;">
+          <div class="display-math">\(\displaystyle \cos a\cos b = \tfrac{1}{2}\{\cos(b-a) + \cos(a+b)\} \le \tfrac{1}{2}(\cos 2h + 1) = \cos^2 h \le \cos h\)</div>
+          <div class="display-math">\(\displaystyle \overline{Q_aQ_b} = \frac{2\sin h\cos h}{\cos a\cos b} \ \ge\ \frac{2\sin h\cos h}{\cos h} = 2\sin h = \overline{P_aP_b}\)</div>
+        </div>
+        <div class="rows">
+          <div class="row"><div class="row-term">사용한 공식</div><div class="row-desc">덧셈정리, 배각공식 \(\cos 2h = 2\cos^2 h - 1\)</div></div>
+          <div class="row"><div class="row-term">결론</div><div class="row-desc">현 \(\le\) 그림자 &nbsp;→&nbsp; \(x \le \tan x\)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 16. 극한과 도함수 -->
+    <div class="slide" data-section="7">
+      <div class="title-zone"><h1 class="slide-title">극한과 도함수</h1></div>
+      <div class="content-zone split">
+        <div style="display: flex; flex-direction: column; gap: 44px;">
+          <div class="display-math">\(\displaystyle \sin x &lt; x \le \tan x \;\Longrightarrow\; \cos x \le \frac{\sin x}{x} &lt; 1 \;\Longrightarrow\; \lim_{x\to 0+}\frac{\sin x}{x} = 1\)</div>
+          <div class="display-math">\(\displaystyle (\sin x)' = \cos x\)</div>
+        </div>
+        <div class="rows">
+          <div class="row"><div class="row-term">\(x &lt; 0\)</div><div class="row-desc">\(\dfrac{\sin x}{x}\)는 우함수</div></div>
+          <div class="row"><div class="row-term">도함수</div><div class="row-desc">합을 곱으로 바꾸는 공식 (5번 슬라이드와 동일)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 17. 새 근거의 연쇄 -->
+    <div class="slide" data-section="7">
+      <div class="title-zone">
+        <h1 class="slide-title">새 근거의 연쇄</h1>
+        <p class="slide-subtitle">A → B : A의 증명에 B를 사용</p>
+      </div>
       <div class="content-zone center">
-        <div class="display-math txt-center">\[\pi, \qquad e, \qquad \sqrt{2}\]</div>
-        <p class="info-line txt-center txt-muted">10진법 정규성: 증명되지 않음</p>
+        <div class="graph-wrap"><canvas id="g-chain" width="1740" height="440"></canvas></div>
       </div>
     </div>
 
-    <!-- 21. 정리 -->
-    <div class="slide" data-section="7">
-      <div class="title-zone"><h1 class="slide-title">정리</h1></div>
-      <div class="content-zone">
-        <div class="rows lg">
-          <div class="row"><div class="row-term">교과 내용</div><div class="row-desc">정적분 = 분점 \(k/n\)에서 구한 함숫값 평균의 극한</div></div>
-          <div class="row"><div class="row-term">균등분포</div><div class="row-desc">고르게 퍼진 수열이면 어떤 분점이든 같은 극한</div></div>
-          <div class="row"><div class="row-term">정규수</div><div class="row-desc">\(\{10^k x\}\)의 균등분포 → 자릿수로 정적분 계산</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 22. 탐구 소감 (발표자 관점) -->
-    <div class="slide" data-section="7">
-      <div class="title-zone"><h1 class="slide-title">탐구 소감</h1></div>
-      <div class="content-zone">
-        <div class="rows lg">
-          <div class="row"><div class="row-term">느낀 점</div><div class="row-desc">[직접 작성]</div></div>
-          <div class="row"><div class="row-term">어려웠던 점</div><div class="row-desc">[직접 작성]</div></div>
-          <div class="row"><div class="row-term">더 알고 싶은 점</div><div class="row-desc">[직접 작성]</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 23. 감사합니다 -->
+    <!-- 20. 감사합니다 -->
     <div class="slide slide-outro">
       <div class="outro-inner">
         <div class="outro-main">감사합니다</div>
-        <div class="outro-sub">질의응답</div>
       </div>
       <div class="cover-line"></div>
     </div>
 
   </div>
-  <div id="nav-bar">
-    <button id="btn-prev">◀</button>
-    <span id="slide-counter"></span>
-    <button id="btn-next">▶</button>
-  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-<script src="pi-digits.js"></script>
 <script src="slide.js"></script>
 </body>
 </html>

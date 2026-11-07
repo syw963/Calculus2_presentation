@@ -69,18 +69,20 @@ function showSlide(n) {
   slides[current - 1].classList.remove('active');
   current = Math.max(1, Math.min(TOTAL, n));
   slides[current - 1].classList.add('active');
-  document.getElementById('slide-counter').textContent = `${current} / ${TOTAL}`;
-  document.getElementById('btn-prev').disabled = current === 1;
-  document.getElementById('btn-next').disabled = current === TOTAL;
 }
 const navigate = d => showSlide(current + d);
+/* 전체 화면: F 키 또는 더블클릭 */
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+}
 document.addEventListener('keydown', e => {
   if (e.target.closest('input, textarea, select')) return;
   if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); navigate(1); }
   if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); navigate(-1); }
+  if (e.key === 'f' || e.key === 'F') toggleFullscreen();
 });
-document.getElementById('btn-prev').addEventListener('click', () => navigate(-1));
-document.getElementById('btn-next').addEventListener('click', () => navigate(1));
+document.addEventListener('dblclick', toggleFullscreen);
 showSlide(1);
 
 /* ---------- Graph class (Math and Data modules) ---------- */
@@ -195,342 +197,330 @@ class Graph {
 
 /* ---------- Deck-specific graphs (edit here) ---------- */
 
-/* Graph 확장: 사각형·선분·경로·원·가운데 정렬 텍스트 (모두 Graph 좌표계 사용) */
+/* Graph 확장: 선분·경로·다각형·호·화살표·상자·첨자 라벨 (모두 Graph 좌표계 사용) */
 class DeckGraph extends Graph {
-  rect(x0, y0, x1, y1, color, alpha = 1) {
-    const { ctx } = this;
-    const X0 = this.wx(Math.min(x0, x1)), X1 = this.wx(Math.max(x0, x1));
-    const Y0 = this.wy(Math.max(y0, y1)), Y1 = this.wy(Math.min(y0, y1));
-    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color;
-    ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0); ctx.restore();
-  }
-  frame(x0, y0, x1, y1, color, lw = 1.5, alpha = 1) {
-    const { ctx } = this;
-    const X0 = this.wx(Math.min(x0, x1)), X1 = this.wx(Math.max(x0, x1));
-    const Y0 = this.wy(Math.max(y0, y1)), Y1 = this.wy(Math.min(y0, y1));
-    ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = lw;
-    ctx.strokeRect(X0, Y0, X1 - X0, Y1 - Y0); ctx.restore();
-  }
+  get s() { return this.W / (this.xMax - this.xMin); }
   line(x0, y0, x1, y1, color, lw = 2, dash = null) {
     const { ctx } = this;
-    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw;
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round';
     if (dash) ctx.setLineDash(dash);
     ctx.beginPath(); ctx.moveTo(this.wx(x0), this.wy(y0)); ctx.lineTo(this.wx(x1), this.wy(y1));
     ctx.stroke(); ctx.restore();
   }
-  path(pts, color, lw = 3) {
+  path(pts, color, lw = 3, dash = null) {
     if (!pts.length) return;
     const { ctx } = this;
     ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round';
+    if (dash) ctx.setLineDash(dash);
     ctx.beginPath();
     pts.forEach(([x, y], i) => i ? ctx.lineTo(this.wx(x), this.wy(y)) : ctx.moveTo(this.wx(x), this.wy(y)));
     ctx.stroke(); ctx.restore();
+  }
+  fillPoly(pts, color, alpha = 1) {
+    const { ctx } = this;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath();
+    pts.forEach(([x, y], i) => i ? ctx.lineTo(this.wx(x), this.wy(y)) : ctx.moveTo(this.wx(x), this.wy(y)));
+    ctx.closePath(); ctx.fill(); ctx.restore();
   }
   circle(x, y, r, color, alpha = 1) {
     const { ctx } = this;
     ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color;
     ctx.beginPath(); ctx.arc(this.wx(x), this.wy(y), r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
-  label(x, y, str, color = cssVar('--c-ink'), size = 28, weight = 400, align = 'center') {
+  /* 중심 (cx, cy), 반지름 r, 각 a0 → a1 (반시계) */
+  arc(cx, cy, r, a0, a1, color, lw = 3, dash = null) {
+    const { ctx } = this;
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = lw;
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.arc(this.wx(cx), this.wy(cy), r * this.s, -a0, -a1, true);
+    ctx.stroke(); ctx.restore();
+  }
+  sector(cx, cy, r, a0, a1, color, alpha = 1) {
+    const { ctx } = this;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(this.wx(cx), this.wy(cy));
+    ctx.arc(this.wx(cx), this.wy(cy), r * this.s, -a0, -a1, true);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  arrow(x0, y0, x1, y1, color, lw = 4) {
+    const { ctx } = this;
+    const X0 = this.wx(x0), Y0 = this.wy(y0), X1 = this.wx(x1), Y1 = this.wy(y1);
+    const t = Math.atan2(Y1 - Y0, X1 - X0), L = 22;
+    ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(X0, Y0);
+    ctx.lineTo(X1 - L * 0.8 * Math.cos(t), Y1 - L * 0.8 * Math.sin(t)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X1, Y1);
+    ctx.lineTo(X1 - L * Math.cos(t - 0.42), Y1 - L * Math.sin(t - 0.42));
+    ctx.lineTo(X1 - L * Math.cos(t + 0.42), Y1 - L * Math.sin(t + 0.42));
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  box(x0, y0, x1, y1, fill, stroke, lw = 3) {
+    const { ctx } = this;
+    const X = this.wx(Math.min(x0, x1)), Y = this.wy(Math.max(y0, y1));
+    const w = Math.abs(this.wx(x1) - this.wx(x0)), h = Math.abs(this.wy(y1) - this.wy(y0));
+    ctx.save(); ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(X, Y, w, h, 16) : ctx.rect(X, Y, w, h);
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); ctx.restore();
+  }
+  label(x, y, str, color = cssVar('--c-ink'), size = 30, weight = 400, align = 'center') {
     const { ctx } = this;
     ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = 'middle';
     ctx.font = `${weight} ${size}px "IBM Plex Sans KR","IBM Plex Sans",sans-serif`;
     ctx.fillText(str, this.wx(x), this.wy(y));
     ctx.textBaseline = 'alphabetic';
   }
+  /* 기울임 글자 + 아래 첨자 (예: P_a), 가운데 정렬 */
+  labelSub(x, y, base, sub, color = cssVar('--c-ink')) {
+    const { ctx } = this;
+    const fb = 'italic 600 34px "IBM Plex Sans",sans-serif', fs = 'italic 600 28px "IBM Plex Sans",sans-serif';
+    ctx.font = fb; const wb = ctx.measureText(base).width;
+    ctx.font = fs; const ws = sub ? ctx.measureText(sub).width + 2 : 0;
+    const X = this.wx(x) - (wb + ws) / 2, Y = this.wy(y);
+    ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = fb; ctx.fillText(base, X, Y);
+    if (sub) { ctx.font = fs; ctx.fillText(sub, X + wb + 2, Y + 12); }
+    ctx.textBaseline = 'alphabetic';
+  }
 }
 
-const frac = x => x - Math.floor(x);
-const fmt = n => n.toLocaleString('ko-KR');
 const $ = id => document.getElementById(id);
-const LOG_LABELS = ['1', '10', '100', '1천', '1만', '10만'];
+const CURVES = () => ['--g-curve-1', '--g-curve-2', '--g-curve-3'].map(cssVar);
 
-/* 슬라이더: 드래그 후 포커스를 풀어 방향키로 슬라이드를 넘길 수 있게 함 */
-function bindSlider(id, draw) {
-  const el = $(id);
-  el.addEventListener('input', draw);
-  el.addEventListener('pointerup', () => el.blur());
-  return el;
+/* ----- 단위원 공통: 가로세로 비율 1:1 ----- */
+function unitGraph(id) {
+  const c = $(id); if (!c) return null;
+  const W = +(c.dataset.w || c.width), H = +(c.dataset.h || c.height);
+  const xMin = -0.16, xMax = 1.34, yMin = -0.16;
+  return new DeckGraph(id, { xMin, xMax, yMin, yMax: yMin + (xMax - xMin) * H / W });
 }
-/* 로그 눈금 슬라이더(0–1000) → 1 … nMax */
-const logN = (v, nMax) => Math.max(1, Math.round(Math.pow(nMax, v / 1000)));
+function unitBase(g) {
+  const axis = cssVar('--g-axis'), ref = cssVar('--g-ref');
+  g.clear();
+  g.line(0, 0, g.xMax - 0.04, 0, axis, 2);
+  g.line(0, 0, 0, g.yMax - 0.04, axis, 2);
+  g.arc(0, 0, 1, 0, Math.PI / 2, ref, 2, [10, 8]);
+}
+function unitMarks(g, x, { angle = true, P = 'P' } = {}) {
+  const ink = cssVar('--c-ink'), muted = cssVar('--c-muted');
+  if (angle) {
+    g.arc(0, 0, 0.17, 0, x, muted, 2);
+    g.label(0.25 * Math.cos(x / 2), 0.25 * Math.sin(x / 2), 'x', muted, 30, 600);
+  }
+  g.circle(0, 0, 6, ink);
+  g.label(-0.07, -0.07, 'O', ink, 30, 600);
+  g.label(1.02, -0.08, 'A', ink, 30, 600);
+  if (P) g.label(1.1 * Math.cos(x), 1.1 * Math.sin(x), P, ink, 30, 600);
+}
 
-/* 재생 버튼: 슬라이더를 끝까지 자동으로 움직임 */
-function bindPlayer(btnId, sliderId, draw, stepFn) {
-  const btn = $(btnId), sl = $(sliderId);
-  let timer = null;
-  const stop = () => { cancelAnimationFrame(timer); timer = null; btn.textContent = '재생'; btn.classList.remove('active'); };
-  btn.addEventListener('click', () => {
-    btn.blur();
-    if (timer) return stop();
-    if (+sl.value >= +sl.max) sl.value = sl.min;
-    btn.textContent = '정지'; btn.classList.add('active');
-    const tick = () => {
-      const v = Math.min(+sl.max, +sl.value + stepFn(+sl.value));
-      sl.value = v; draw();
-      if (v >= +sl.max) return stop();
-      timer = requestAnimationFrame(tick);
-    };
-    timer = requestAnimationFrame(tick);
+/* ===== 넓이 비교 (정석의 그림) ===== */
+function drawArea() {
+  const x = 0.7;
+  const g = unitGraph('g-area'); if (!g) return;
+  const [c1, c2, c3] = CURVES();
+  const P = [Math.cos(x), Math.sin(x)], T = [1, Math.tan(x)];
+  unitBase(g);
+  g.fillPoly([[0, 0], [1, 0], T], c3, 0.08);
+  g.sector(0, 0, 1, 0, x, c2, 0.10);
+  g.fillPoly([[0, 0], [1, 0], P], c1, 0.12);
+  g.path([[0, 0], [1, 0], T, [0, 0]], c3, 3);
+  g.path([[0, 0], [1, 0], P, [0, 0]], c1, 3);
+  g.arc(0, 0, 1, 0, x, c2, 5);
+  unitMarks(g, x, { P: null });
+  g.label(1.1 * Math.cos(x + 0.1), 1.1 * Math.sin(x + 0.1), 'P', cssVar('--c-ink'), 30, 600);
+  g.label(1.08, T[1], 'T', cssVar('--c-ink'), 30, 600);
+}
+
+/* ===== 사분원의 넓이 ===== */
+function drawQuarter() {
+  const g = unitGraph('g-quarter'); if (!g) return;
+  const [c1] = CURVES();
+  unitBase(g);
+  const pts = [[0, 0]];
+  for (let i = 0; i <= 200; i++) { const x = i / 200; pts.push([x, Math.sqrt(1 - x * x)]); }
+  g.fillPoly(pts, c1, 0.16);
+  g.path(pts.slice(1), c1, 4);
+  g.circle(0, 0, 6, cssVar('--c-ink'));
+  g.label(-0.07, -0.07, 'O', cssVar('--c-ink'), 30, 600);
+  g.label(1, -0.08, '1', cssVar('--g-tick'), 30);
+  g.label(-0.07, 1, '1', cssVar('--g-tick'), 30);
+  g.label(0.82, 0.86, 'y = √(1 − x²)', c1, 32, 600, 'left');
+  g.label(0.38, 0.38, 'π / 4', c1, 40, 600);
+}
+
+/* ===== 근거의 연쇄 ===== */
+const CYCLE_NODES = [
+  [260, 450, '(sin x)′ = cos x'],
+  [870, 450, 'lim  sin x / x = 1'],
+  [1480, 450, '부채꼴 넓이  ½r²θ'],
+  [1480, 130, '원의 넓이  πr²'],
+  [870, 130, '정적분  ∫ √(1 − x²) dx'],
+  [260, 130, '치환  x = sin θ'],
+];
+/* 끊을 수 있는 고리: 화살표 번호(i → i+1) → 표시 번호 */
+const CYCLE_CUTS = { 1: '①', 2: '②', 3: '③' };
+function drawCycleOn(id, withCuts) {
+  const g = new DeckGraph(id, { xMin: 0, xMax: 1740, yMin: 0, yMax: 580 });
+  if (!g.canvas) return;
+  const ink = cssVar('--c-ink'), white = cssVar('--c-white'), border = cssVar('--c-border');
+  const c1 = cssVar('--g-curve-1'), red = cssVar('--c-red'), point = cssVar('--g-point');
+  const BW = 230, BH = 62;
+  g.clear();
+  CYCLE_NODES.forEach(([ax, ay], i) => {
+    const [bx, by] = CYCLE_NODES[(i + 1) % 6], col = i === 5 ? red : c1;
+    let p0, p1;
+    if (ay === by) {
+      const d = Math.sign(bx - ax);
+      p0 = [ax + d * (BW + 8), ay]; p1 = [bx - d * (BW + 14), by];
+    } else {
+      const d = Math.sign(by - ay);
+      p0 = [ax, ay + d * (BH + 8)]; p1 = [bx, by - d * (BH + 14)];
+    }
+    g.arrow(p0[0], p0[1], p1[0], p1[1], col, 4);
+    if (withCuts && CYCLE_CUTS[i]) {
+      const mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2;
+      const s = 16;
+      g.line(mx - s, my - s, mx + s, my + s, point, 6);
+      g.line(mx - s, my + s, mx + s, my - s, point, 6);
+      if (ay === by) g.label(mx, my + 44, CYCLE_CUTS[i], point, 40, 600);
+      else g.label(mx - 44, my, CYCLE_CUTS[i], point, 40, 600);
+    }
+  });
+  g.label(290, 290, 'dx = cos θ dθ', red, 32, 600, 'left');
+  CYCLE_NODES.forEach(([x, y, t], i) => {
+    g.box(x - BW, y - BH, x + BW, y + BH, white, i === 0 ? red : border, i === 0 ? 4 : 2);
+    g.label(x, y, t, ink, 36, 600);
   });
 }
-/* 프리셋 버튼 묶음 */
-function bindPresets(groupId, onPick) {
-  const btns = [...$(groupId).querySelectorAll('.preset-btn')];
-  btns.forEach(b => b.addEventListener('click', () => {
-    btns.forEach(x => x.classList.toggle('active', x === b));
-    b.blur(); onPick(b);
-  }));
-}
 
-/* ===== 3. 정적분과 급수의 합: 직사각형 n개 ===== */
-function drawRiemann() {
-  const n = +$('riemann-slider').value;
-  $('riemann-value').textContent = n;
-  const g = new DeckGraph('g-riemann', { xMin: -0.1, xMax: 1.06, yMin: -0.13, yMax: 1.08 });
+/* ===== 새 근거의 연쇄: 되돌아오는 화살표 없음 ===== */
+const CHAIN_NODES = ['(sin x)′ = cos x', 'lim  sin x / x = 1', 'sin x < x ≤ tan x', '호의 길이 정의'];
+const CHAIN_TOOLS = ['합을 곱으로', '샌드위치', '삼각부등식 · 덧셈정리'];
+function drawChain() {
+  const g = new DeckGraph('g-chain', { xMin: 0, xMax: 1740, yMin: 0, yMax: 440 });
   if (!g.canvas) return;
-  const c1 = cssVar('--g-curve-1');
-  g.clear(); g.drawGrid(0.25, 0.25);
-  let s = 0;
-  for (let k = 1; k <= n; k++) {
-    const x = k / n, y = x * x; s += y;
-    g.rect((k - 1) / n, 0, x, y, c1, 0.16);
-    if (n <= 40) g.frame((k - 1) / n, 0, x, y, c1, 1.5, 0.6);
-  }
-  g.drawAxes();
-  g.drawCurve(x => (x >= 0 && x <= 1) ? x * x : NaN, c1, 4);
-  if (n <= 30) for (let k = 1; k <= n; k++) g.circle(k / n, (k / n) ** 2, 6, c1);
-  g.ticksX([0.5, 1]); g.ticksY([0.5, 1]);
-  g.label(0.72, 0.86, 'y = x²', c1, 32, 600);
-  $('riemann-info').innerHTML =
-    `합: <strong>${(s / n).toFixed(4)}</strong><br>정적분: 1/3 ≈ 0.3333`;
-}
-
-/* ===== 7. nα의 소수 부분: 수직선 + 10칸 막대 ===== */
-const ALPHAS = { sqrt2: Math.SQRT2, pi: Math.PI, half: 0.5 };
-let naAlpha = 'sqrt2';
-function drawNAlpha() {
-  const N = +$('na-slider').value, a = ALPHAS[naAlpha];
-  $('na-value').textContent = fmt(N);
-  const c1 = cssVar('--g-curve-1'), axis = cssVar('--g-axis'), tick = cssVar('--g-tick');
-  const pts = [], bins = new Array(10).fill(0), uniq = new Set();
-  for (let n = 1; n <= N; n++) {
-    const x = frac(n * a); pts.push(x);
-    bins[Math.min(9, Math.floor(x * 10))]++; uniq.add(x.toFixed(9));
-  }
-  /* 수직선 */
-  const L = new DeckGraph('g-line', { xMin: -0.05, xMax: 1.05, yMin: 0, yMax: 1 });
-  if (!L.canvas) return;
-  L.clear();
-  L.line(0, 0.6, 1, 0.6, axis, 2);
-  for (let t = 0; t <= 10; t++) L.line(t / 10, 0.52, t / 10, 0.68, axis, t % 5 ? 1.5 : 2.5);
-  [0, 0.5, 1].forEach(v => L.label(v, 0.22, String(v), tick));
-  pts.forEach(x => L.circle(x, 0.6, 7, c1, N > 300 ? 0.35 : 0.6));
-  if (N) L.dot(pts[N - 1], 0.6, cssVar('--g-point'), 10);
-  /* 10칸 비율 */
-  const H = new DeckGraph('g-hist', { xMin: -0.75, xMax: 10.6, yMin: -0.1, yMax: 0.62 });
-  H.clear(); H.drawGrid(100, 0.1); H.drawAxes();
-  H.bars(bins.map(b => b / N), c1, 0.7);
-  H.drawDash(() => 0.1);
-  H.labelsX(bins.map((_, i) => (i / 10).toFixed(1)));
-  H.ticksY([0.1, 0.5], v => v.toFixed(1));
-  const r = bins.map(b => b / N);
-  $('na-info').innerHTML =
-    `서로 다른 점: <strong>${fmt(uniq.size)}</strong>개<br>` +
-    `구간 비율: <strong>${Math.min(...r).toFixed(3)}</strong> ~ <strong>${Math.max(...r).toFixed(3)}</strong>`;
-}
-
-/* ===== 9. x²의 평균: √2 배수 vs 0.5 배수 ===== */
-const AVG_MAX = 10000;
-let AVG = null;
-function avgData() {
-  if (AVG) return AVG;
-  const A = [0], B = [0]; let sa = 0, sb = 0;
-  for (let n = 1; n <= AVG_MAX; n++) {
-    sa += frac(n * Math.SQRT2) ** 2; sb += frac(n * 0.5) ** 2;
-    A.push(sa / n); B.push(sb / n);
-  }
-  return (AVG = { A, B });
-}
-/* 로그 x축용 표본점 */
-function logSamples(N, count = 700) {
-  const out = []; let last = 0;
-  for (let i = 0; i <= count; i++) {
-    const n = Math.max(1, Math.round(Math.pow(N, i / count)));
-    if (n !== last) { out.push(n); last = n; }
-  }
-  return out;
-}
-function drawAvg() {
-  const N = logN(+$('avg-slider').value, AVG_MAX);
-  $('avg-value').textContent = fmt(N);
-  const { A, B } = avgData();
-  const g = new DeckGraph('g-avg', { xMin: -0.3, xMax: 4.15, yMin: -0.05, yMax: 0.55 });
-  if (!g.canvas) return;
-  const c1 = cssVar('--g-curve-1'), c2 = cssVar('--g-curve-2');
-  g.clear(); g.drawGrid(1, 0.1); g.drawAxes();
-  g.drawDash(() => 1 / 3);
-  const S = logSamples(N);
-  g.path(S.map(n => [Math.log10(n), B[n]]), c2, 3);
-  g.path(S.map(n => [Math.log10(n), A[n]]), c1, 3);
-  g.dot(Math.log10(N), B[N], c2, 8); g.dot(Math.log10(N), A[N], c1, 8);
-  g.ticksX([0, 1, 2, 3, 4], v => LOG_LABELS[v]);
-  g.ticksY([0.1, 0.2, 0.3, 0.4, 0.5], v => v.toFixed(1));
-  $('avg-info').innerHTML =
-    `√2: <strong>${A[N].toFixed(5)}</strong><br>0.5: <strong>${B[N].toFixed(5)}</strong>`;
-}
-
-/* ===== 10. 계단함수의 경우 ===== */
-function drawStep() {
-  const N = +$('step-slider').value;
-  $('step-value').textContent = fmt(N);
-  const g = new DeckGraph('g-step', { xMin: -0.08, xMax: 1.04, yMin: -1.25, yMax: 6.1 });
-  if (!g.canvas) return;
-  const c1 = cssVar('--g-curve-1'), ref = cssVar('--g-ref');
-  g.clear(); g.drawGrid(0.1, 1);
-  g.rect(0, 0, 0.3, 2, c1, 0.14); g.rect(0.3, 0, 1, 5, c1, 0.14);
-  g.drawAxes();
-  g.line(0.3, 2, 0.3, 5, ref, 3, [12, 8]);
-  g.line(0, 2, 0.3, 2, c1, 4); g.line(0.3, 5, 1, 5, c1, 4);
-  g.ticksX([0.3, 1]); g.ticksY([2, 5]);
-  let lo = 0;
-  for (let n = 1; n <= N; n++) {
-    const x = frac(n * Math.SQRT2);
-    if (x < 0.3) lo++;
-    g.circle(x, -0.85, 6, c1, N > 300 ? 0.3 : 0.6);
-  }
-  const p = lo / N, q = 1 - p;
-  $('step-info').innerHTML =
-    `[0, 0.3): <strong>${p.toFixed(3)}</strong><br>[0.3, 1]: <strong>${q.toFixed(3)}</strong><br>` +
-    `평균: <strong>${(2 * p + 5 * q).toFixed(3)}</strong>`;
-}
-
-/* ===== 14. 숫자 빈도: π / 0123456789 반복, 1자리 / 2자리 ===== */
-const DIGIT_MAX = 100000;
-const REP_DIGITS = '0123456789'.repeat(DIGIT_MAX / 10);
-let digitSrc = 'pi', digitUnit = 1;
-function drawDigits() {
-  const D = Math.max(100, logN(+$('digit-slider').value * 0.6 + 400, DIGIT_MAX));
-  $('digit-value').textContent = fmt(D);
-  const s = digitSrc === 'pi' ? PI_DIGITS : REP_DIGITS;
-  const m = digitUnit === 1 ? 10 : 100;
-  const cnt = new Array(m).fill(0); let total = 0;
-  if (m === 10) { for (let i = 0; i < D; i++) cnt[s.charCodeAt(i) - 48]++; total = D; }
-  else { for (let i = 0; i < D - 1; i++) cnt[(s.charCodeAt(i) - 48) * 10 + s.charCodeAt(i + 1) - 48]++; total = D - 1; }
-  const r = cnt.map(c => c / total), e = 1 / m;
-  const yMax = Math.max(2 * e, Math.max(...r) * 1.15);
-  const g = new DeckGraph('g-digits', { xMin: m === 10 ? -0.6 : -7, xMax: m + 0.7, yMin: -yMax * 0.13, yMax });
-  if (!g.canvas) return;
+  const ink = cssVar('--c-ink'), white = cssVar('--c-white'), border = cssVar('--c-border');
+  const muted = cssVar('--c-muted'), c1 = cssVar('--g-curve-1'), green = cssVar('--c-green');
+  const BW = 185, BH = 62, gap = (1740 - 8 * BW - 20) / 3, y = 270;
+  const cx = i => 10 + BW + i * (2 * BW + gap);
   g.clear();
-  g.line(g.xMin, 0, g.xMax, 0, cssVar('--g-axis'), 1.5);
-  g.bars(r, cssVar('--g-curve-1'), m === 10 ? 0.65 : 0.7);
-  g.drawDash(() => e);
-  g.labelsX(m === 10 ? r.map((_, i) => String(i)) : r.map((_, i) => i % 10 ? '' : String(i).padStart(2, '0')));
-  const ticks = m === 10 ? [0.1, 0.2] : (yMax > 0.1 ? [0.01, 0.1] : [0.01, 0.02]);
-  g.ticksY(ticks.filter(t => t <= yMax * 0.9), v => String(v));
-  const zero = cnt.filter(c => c === 0).length;
-  $('digit-info').innerHTML =
-    `비율: <strong>${Math.min(...r).toFixed(4)}</strong> ~ <strong>${Math.max(...r).toFixed(4)}</strong><br>` +
-    `기댓값: ${e}<br>나타나지 않은 ${m === 10 ? '숫자' : '묶음'}: <strong>${zero}</strong>개`;
-}
-
-/* ===== 15. 10배와 자릿수 이동 ===== */
-function drawShift() {
-  const k = +$('shift-slider').value;
-  $('shift-value').textContent = k;
-  const g = new DeckGraph('g-shift', { xMin: 0, xMax: 1, yMin: 0, yMax: 1 });
-  if (!g.canvas) return;
-  const ink = cssVar('--c-ink'), faint = cssVar('--c-faint'), c1 = cssVar('--g-curve-1');
-  const muted = cssVar('--c-muted'), axis = cssVar('--g-axis');
-  g.clear();
-  /* 자릿수 행 */
-  const SHOW = 19, x0 = 0.175, dx = 0.0385;
-  g.label(0.03, 0.84, 'x  =', muted, 40, 400, 'left');
-  g.label(0.13, 0.84, '0.', ink, 44, 400);
-  for (let i = 0; i < SHOW; i++) {
-    const X = x0 + i * dx;
-    if (i === k) g.rect(X - dx / 2 + 0.002, 0.77, X + dx / 2 - 0.002, 0.91, c1, 0.15);
-    g.label(X, 0.84, PI_DIGITS[i], i < k ? faint : (i === k ? c1 : ink), 44, i === k ? 600 : 400);
+  for (let i = 0; i < 3; i++) {
+    g.arrow(cx(i) + BW + 8, y, cx(i + 1) - BW - 12, y, c1, 4);
+    g.label((cx(i) + cx(i + 1)) / 2, y - BH - 50, CHAIN_TOOLS[i], muted, 30, 600);
   }
-  g.label(x0 + SHOW * dx - 0.005, 0.84, '…', muted, 44);
-  /* {10^k x} 행 */
-  const tail = PI_DIGITS.substr(k, 14);
-  const sup = String(k).split('').map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]).join('');
-  g.label(0.03, 0.6, `{10${sup}x}  =  0.${tail}…`, ink, 40, 400, 'left');
-  /* 수직선 */
-  const nx = v => 0.06 + 0.88 * v, yL = 0.25;
-  const d = +PI_DIGITS[k], val = parseFloat('0.' + tail);
-  g.rect(nx(d / 10), yL - 0.06, nx((d + 1) / 10), yL + 0.06, c1, 0.18);
-  g.line(nx(0), yL, nx(1), yL, axis, 2.5);
-  for (let t = 0; t <= 10; t++) {
-    g.line(nx(t / 10), yL - 0.035, nx(t / 10), yL + 0.035, axis, 2);
-    g.label(nx(t / 10), yL - 0.12, t === 0 ? '0' : t === 10 ? '1' : (t / 10).toFixed(1), cssVar('--g-tick'), 28);
+  CHAIN_NODES.forEach((t, i) => {
+    const last = i === 3;
+    g.box(cx(i) - BW, y - BH, cx(i) + BW, y + BH, white, last ? green : border, last ? 4 : 2);
+    g.label(cx(i), y, t, ink, 34, 600);
+  });
+  g.label(cx(3), y + BH + 48, '정의 (출발점)', green, 30, 600);
+}
+
+/* ===== 호의 길이: 꺾은선 n = 1, 2, 4 ===== */
+function drawArcDef() {
+  const x = 1;
+  const g = unitGraph('g-arcdef'); if (!g) return;
+  const cs = CURVES();
+  unitBase(g);
+  g.arc(0, 0, 1, 0, x, cssVar('--c-ink'), 5);
+  [1, 2, 4].forEach((n, j) => {
+    const pts = [];
+    for (let k = 0; k <= n; k++) pts.push([Math.cos(k * x / n), Math.sin(k * x / n)]);
+    g.path(pts, cs[j], 3);
+    pts.forEach(([a, b]) => g.circle(a, b, 7, cs[j]));
+  });
+  unitMarks(g, x, { angle: false });
+}
+
+/* ===== sin x < x ===== */
+function drawSinX() {
+  const x = 0.8;
+  const g = unitGraph('g-sinx'); if (!g) return;
+  const [c1, c2, c3] = CURVES();
+  const ink = cssVar('--c-ink'), muted = cssVar('--c-muted');
+  const P = [Math.cos(x), Math.sin(x)], H = [Math.cos(x), 0];
+  unitBase(g);
+  g.line(0, 0, P[0], P[1], muted, 2);
+  g.arc(0, 0, 1, 0, x, c3, 5);
+  g.line(1, 0, P[0], P[1], c2, 4);
+  g.line(H[0], 0, P[0], P[1], c1, 5);
+  const q = 0.04;
+  g.path([[H[0] - q, 0], [H[0] - q, q], [H[0], q]], muted, 2);
+  unitMarks(g, x);
+  g.label(H[0], -0.08, 'H', ink, 30, 600);
+  g.label(H[0] - 0.13, P[1] / 2, 'sin x', c1, 30, 600);
+  g.label(1.05 * Math.cos(x / 2) + 0.07, 1.05 * Math.sin(x / 2) + 0.03, '호 x', c3, 30, 600);
+}
+
+/* ===== 접선으로의 투영 (n = 3) ===== */
+function drawProj() {
+  const n = 3, x = 0.9;
+  const g = unitGraph('g-proj'); if (!g) return;
+  const [c1, c2] = CURVES();
+  const ref = cssVar('--g-ref'), ink = cssVar('--c-ink');
+  unitBase(g);
+  g.line(1, -0.06, 1, g.yMax - 0.04, ref, 2);
+  const P = [], Q = [];
+  for (let k = 0; k <= n; k++) {
+    const t = k * x / n;
+    P.push([Math.cos(t), Math.sin(t)]); Q.push([1, Math.tan(t)]);
   }
-  g.dot(nx(val), yL, cssVar('--g-point'), 11);
-  $('shift-info').innerHTML =
-    `​${k + 1}번째 자리: <strong>${d}</strong><br>구간: <strong>[0.${d}, ${d === 9 ? '1' : '0.' + (d + 1)})</strong>`;
+  Q.forEach(([a, b]) => g.line(0, 0, a, b, ref, 1.5, [8, 8]));
+  Q.forEach(([a, b], k) => { if (k) g.line(1, Q[k - 1][1], a, b, c2, 7); });
+  g.path(P, c1, 4);
+  P.forEach(([a, b]) => g.circle(a, b, 7, c1));
+  Q.forEach(([a, b]) => g.circle(a, b, 7, c2));
+  unitMarks(g, x, { angle: false, P: null });
+  for (let k = 1; k < n; k++) {
+    const t = k * x / n;
+    g.labelSub(0.86 * Math.cos(t) - 0.02, 0.86 * Math.sin(t), 'P', String(k), c1);
+    g.labelSub(1.12, Math.tan(t), 'Q', String(k), c2);
+  }
+  g.labelSub(1.1 * Math.cos(x) - 0.04, 1.1 * Math.sin(x), 'P', String(n), c1);
+  g.label(1.04, Math.tan(x), 'T = Q₃', ink, 30, 600, 'left');
+  g.label(1.04, -0.08, 'A = Q₀', ink, 30, 600, 'left');
 }
 
-/* ===== 18. 자릿수로 계산한 정적분: π vs 챔퍼나운 상수 ===== */
-const PI_N = 99980;
-let PIAVG = null;
-function piData() {
-  if (PIAVG) return PIAVG;
-  let ch = '', i = 1;
-  while (ch.length < PI_N + 20) ch += String(i++);
-  const run = s => {
-    const out = [0]; let sum = 0;
-    for (let k = 0; k < PI_N; k++) { const x = parseFloat('0.' + s.substr(k, 15)); sum += x * x; out.push(sum / (k + 1)); }
-    return out;
-  };
-  return (PIAVG = { P: run(PI_DIGITS), C: run(ch) });
-}
-function drawPiAvg() {
-  const N = logN(+$('pi-slider').value, PI_N);
-  $('pi-value').textContent = fmt(N);
-  const { P, C } = piData();
-  const g = new DeckGraph('g-pi', { xMin: -0.35, xMax: 5.2, yMin: -0.05, yMax: 0.55 });
-  if (!g.canvas) return;
-  const c1 = cssVar('--g-curve-1'), c2 = cssVar('--g-curve-2');
-  g.clear(); g.drawGrid(1, 0.1); g.drawAxes();
-  g.drawDash(() => 1 / 3);
-  const S = logSamples(N);
-  g.path(S.map(n => [Math.log10(n), C[n]]), c2, 3);
-  g.path(S.map(n => [Math.log10(n), P[n]]), c1, 3);
-  g.dot(Math.log10(N), C[N], c2, 8); g.dot(Math.log10(N), P[N], c1, 8);
-  g.ticksX([0, 1, 2, 3, 4, 5], v => LOG_LABELS[v]);
-  g.ticksY([0.1, 0.2, 0.3, 0.4, 0.5], v => v.toFixed(1));
-  $('pi-info').innerHTML =
-    `π: <strong>${P[N].toFixed(5)}</strong><br>챔퍼나운: <strong>${C[N].toFixed(5)}</strong>` +
-    `<br><span class="txt-muted txt-sm">π의 정규성은 미증명</span>`;
-}
-
-/* ===== 이벤트 연결 (한 번만) ===== */
-let deckBound = false;
-function bindDeck() {
-  if (deckBound) return; deckBound = true;
-  bindSlider('riemann-slider', drawRiemann);
-  bindPlayer('riemann-play', 'riemann-slider', drawRiemann, () => 1);
-  bindSlider('na-slider', drawNAlpha);
-  bindPlayer('na-play', 'na-slider', drawNAlpha, v => Math.max(1, Math.round(v / 40)));
-  bindPresets('alpha-presets', b => { naAlpha = b.dataset.alpha; drawNAlpha(); });
-  bindSlider('avg-slider', drawAvg);
-  bindPlayer('avg-play', 'avg-slider', drawAvg, () => 4);
-  bindSlider('step-slider', drawStep);
-  bindPlayer('step-play', 'step-slider', drawStep, v => Math.max(1, Math.round(v / 40)));
-  bindSlider('digit-slider', drawDigits);
-  bindPlayer('digit-play', 'digit-slider', drawDigits, () => 5);
-  bindPresets('digit-src', b => { digitSrc = b.dataset.src; drawDigits(); });
-  bindPresets('digit-unit', b => { digitUnit = +b.dataset.unit; drawDigits(); });
-  bindSlider('shift-slider', drawShift);
-  bindSlider('pi-slider', drawPiAvg);
-  bindPlayer('pi-play', 'pi-slider', drawPiAvg, () => 4);
+/* ===== 조각 하나 확대 ===== */
+function drawPiece() {
+  const a = 0.3, b = 0.85, m = (a + b) / 2;
+  const g = unitGraph('g-piece'); if (!g) return;
+  const [c1, c2] = CURVES();
+  const ref = cssVar('--g-ref'), muted = cssVar('--c-muted'), ink = cssVar('--c-ink');
+  const Pa = [Math.cos(a), Math.sin(a)], Pb = [Math.cos(b), Math.sin(b)];
+  const Qa = [1, Math.tan(a)], Qb = [1, Math.tan(b)];
+  const M = [(Pa[0] + Pb[0]) / 2, (Pa[1] + Pb[1]) / 2];
+  unitBase(g);
+  g.line(1, -0.06, 1, g.yMax - 0.04, ref, 2);
+  g.line(0, 0, Qa[0], Qa[1], muted, 2);
+  g.line(0, 0, Qb[0], Qb[1], muted, 2);
+  g.line(0, 0, M[0], M[1], muted, 2, [8, 8]);
+  /* M에서의 직각 표시 */
+  const u = [Math.cos(m), Math.sin(m)], v = [-Math.sin(m), Math.cos(m)], q = 0.035;
+  g.path([[M[0] - u[0] * q, M[1] - u[1] * q], [M[0] - u[0] * q + v[0] * q, M[1] - u[1] * q + v[1] * q],
+          [M[0] + v[0] * q, M[1] + v[1] * q]], muted, 2);
+  g.line(Qa[0], Qa[1], Qb[0], Qb[1], c2, 7);
+  g.line(Pa[0], Pa[1], Pb[0], Pb[1], c1, 5);
+  [Pa, Pb].forEach(p => g.circle(p[0], p[1], 7, c1));
+  [Qa, Qb].forEach(p => g.circle(p[0], p[1], 7, c2));
+  /* 각 a, h, h */
+  g.arc(0, 0, 0.16, 0, a, muted, 2);
+  g.label(0.24 * Math.cos(a / 2), 0.24 * Math.sin(a / 2), 'a', muted, 30, 600);
+  g.arc(0, 0, 0.3, a, m, muted, 2);
+  g.arc(0, 0, 0.34, m, b, muted, 2);
+  g.label(0.4 * Math.cos((a + m) / 2), 0.4 * Math.sin((a + m) / 2), 'h', muted, 30, 600);
+  g.label(0.44 * Math.cos((m + b) / 2), 0.44 * Math.sin((m + b) / 2), 'h', muted, 30, 600);
+  g.circle(0, 0, 6, ink);
+  g.label(-0.07, -0.07, 'O', ink, 30, 600);
+  g.labelSub(Pa[0] - 0.1, Pa[1] - 0.05, 'P', 'a', c1);
+  g.labelSub(Pb[0] - 0.1, Pb[1] + 0.02, 'P', 'b', c1);
+  g.labelSub(1.12, Qa[1], 'Q', 'a', c2);
+  g.labelSub(1.12, Qb[1], 'Q', 'b', c2);
+  g.label(M[0] - 0.08, M[1] - 0.03, 'M', ink, 30, 600);
 }
 
 function drawAllGraphs() {
-  bindDeck();
-  drawRiemann(); drawNAlpha(); drawAvg(); drawStep();
-  drawDigits(); drawShift(); drawPiAvg();
+  drawArea(); drawQuarter(); drawCycleOn('g-cycle', false); drawCycleOn('g-cut', true); drawChain(); drawArcDef(); drawSinX(); drawProj(); drawPiece();
 }
 
 /* ---------- Init ---------- */
