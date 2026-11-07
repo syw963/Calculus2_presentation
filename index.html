@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>sin x의 도함수 증명</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="slide.css">
+</head>
+<body>
+<div id="stage">
+  <div id="slide-viewport">
+
+    <!-- 1. 표지 -->
+    <div class="slide slide-cover">
+      <div class="cover-inner">
+        <div class="cover-tag">미적분Ⅱ · 교과 발표</div>
+        <h1 class="cover-title">\(\sin x\)의 도함수 증명</h1>
+        <p class="cover-sub">교과서 증명의 순환 고리와 호의 길이를 이용한 증명</p>
+        <div class="cover-meta"><div>[이름]</div><div>2026. 11</div></div>
+      </div>
+      <div class="cover-line"></div>
+    </div>
+
+    <!-- 2. 목차 -->
+    <div class="slide">
+      <div class="title-zone"><h1 class="slide-title">목차</h1></div>
+      <div class="content-zone">
+        <ol class="toc-list">
+          <li class="toc-item"><span class="toc-num">01</span><span class="toc-text">문제 제기</span></li>
+          <li class="toc-item"><span class="toc-num">02</span><span class="toc-text">교과서 증명</span></li>
+          <li class="toc-item"><span class="toc-num">03</span><span class="toc-text">순환 고리</span></li>
+          <li class="toc-item"><span class="toc-num">04</span><span class="toc-text">새로운 증명</span></li>
+          <li class="toc-item"><span class="toc-num">05</span><span class="toc-text">정리</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- 3. 문제 제기 -->
+    <div class="slide" data-section="1">
+      <div class="title-zone">
+        <h1 class="slide-title">입시 문제</h1>
+        <p class="slide-subtitle">2013 오사카대학 이과 1번</p>
+      </div>
+      <div class="content-zone split">
+        <div class="panel">
+          <div class="panel-title">문제</div>
+          <p class="quote sm">\(\displaystyle\lim_{x\to 0}\frac{\sin x}{x}=1\) 임을 보이고, 이를 이용하여 \(\sin x\)의 도함수가 \(\cos x\)임을 증명하라.</p>
+        </div>
+        <ul class="bullet-list">
+          <li>교과서에 실린 증명과 같은 내용</li>
+          <li>극한 → 도함수의 순서를 지정</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. 넓이 비교 (인터랙티브) -->
+    <div class="slide" data-section="2">
+      <div class="title-zone">
+        <h1 class="slide-title">넓이 비교</h1>
+        <p class="slide-subtitle">반지름 1, 중심각 \(x\)</p>
+      </div>
+      <div class="content-zone">
+        <div class="cols">
+          <div class="graph-wrap"><canvas id="g-area" width="720" height="650"></canvas></div>
+          <div class="col controls">
+            <div class="legend vertical">
+              <div class="legend-item"><div class="legend-line c1"></div><span>삼각형 OAP: \(\tfrac12\sin x\)</span></div>
+              <div class="legend-item"><div class="legend-line c3"></div><span>부채꼴 OAP: \(\tfrac12 x\)</span></div>
+              <div class="legend-item"><div class="legend-line c2"></div><span>삼각형 OAT: \(\tfrac12\tan x\)</span></div>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">\(x\)</span>
+              <input type="range" id="area-slider" min="0.2" max="1" step="0.01" value="0.7">
+              <span class="slider-value" id="area-value">0.70</span>
+            </div>
+            <div class="info-line" id="area-info"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 조임 정리 -->
+    <div class="slide" data-section="2">
+      <div class="title-zone">
+        <h1 class="slide-title">조임 정리</h1>
+        <p class="slide-subtitle">\(0 &lt; x &lt; \frac{\pi}{2}\)</p>
+      </div>
+      <div class="content-zone split">
+        <div class="display-math">\(\displaystyle \frac12\sin x\;\le\;\frac12 x\;\le\;\frac12\tan x
+          \qquad\Longrightarrow\qquad \cos x\;\le\;\frac{\sin x}{x}\;\le\;1\)</div>
+        <div class="display-math">\(\displaystyle \lim_{x\to 0+}\cos x=1
+          \qquad\Longrightarrow\qquad \lim_{x\to 0+}\frac{\sin x}{x}=1\)</div>
+        <ul class="bullet-list sm">
+          <li>각 변을 \(\tfrac12\sin x\)로 나눈 뒤 역수</li>
+          <li>\(x&lt;0\): \(\dfrac{\sin x}{x}\)는 우함수이므로 같은 결과</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. 도함수 계산 -->
+    <div class="slide" data-section="2">
+      <div class="title-zone"><h1 class="slide-title">도함수 계산</h1></div>
+      <div class="content-zone split">
+        <div class="display-math">\(\displaystyle \begin{aligned}
+          (\sin x)' &amp;= \lim_{h\to 0}\frac{\sin(x+h)-\sin x}{h}\\[6pt]
+          &amp;= \lim_{h\to 0}\cos\!\left(x+\frac h2\right)\cdot\frac{\sin(h/2)}{h/2}\\[6pt]
+          &amp;= \cos x\cdot 1=\cos x
+        \end{aligned}\)</div>
+        <ul class="bullet-list sm">
+          <li>합 → 곱: \(\sin A-\sin B=2\cos\frac{A+B}{2}\sin\frac{A-B}{2}\)</li>
+          <li>재료: \(\lim\limits_{t\to0}\frac{\sin t}{t}=1\), \(\cos\)의 연속성</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 7. 순환 고리 -->
+    <div class="slide" data-section="3">
+      <div class="title-zone">
+        <h1 class="slide-title">증명의 의존 관계</h1>
+        <p class="slide-subtitle">원의 넓이를 정적분으로 구하는 경우</p>
+      </div>
+      <div class="content-zone split">
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-label">① 목표</div><div class="tl-title">\((\sin x)'\)</div><div class="tl-body">도함수의 정의</div></div>
+          <div class="tl-item"><div class="tl-label">② 필요</div><div class="tl-title">\(\frac{\sin x}{x}\to 1\)</div><div class="tl-body">조임 정리</div></div>
+          <div class="tl-item"><div class="tl-label">③ 필요</div><div class="tl-title">부채꼴 \(\tfrac12 x\)</div><div class="tl-body">넓이 비교</div></div>
+          <div class="tl-item"><div class="tl-label">④ 필요</div><div class="tl-title">원 \(\pi r^2\)</div><div class="tl-body">부채꼴 = 원 × 각의 비율</div></div>
+          <div class="tl-item key"><div class="tl-label">⑤ 필요</div><div class="tl-title">\(\int\!\sqrt{r^2-t^2}\,dt\)</div><div class="tl-body">삼각치환</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">⑤의 치환</div>
+          <p class="info-line">\(t=r\sin\theta\) 이면 \(dt=r\cos\theta\,d\theta\): 이 단계에서 <strong>\((\sin\theta)'=\cos\theta\)</strong>를 이미 사용, ①로 되돌아감</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. 핵심 (dark) -->
+    <div class="slide slide-dark">
+      <div class="title-zone">
+        <div class="section-num">KEY POINT</div>
+        <h1 class="slide-title">정의의 순서</h1>
+      </div>
+      <div class="content-zone center">
+        <ul class="bullet-list">
+          <li>증명의 계산은 옳음</li>
+          <li>원의 넓이를 정적분으로 정의하면 순환</li>
+          <li>넓이·각·길이를 적분 없이 정의하면 순환 없음</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 9. 해결 방법 -->
+    <div class="slide" data-section="3">
+      <div class="title-zone"><h1 class="slide-title">순환을 끊는 방법</h1></div>
+      <div class="content-zone">
+        <div class="rows">
+          <div class="row"><div class="row-term">다각형 근사</div><div class="row-desc">원의 넓이 = 내접·외접 정다각형 넓이의 극한</div></div>
+          <div class="row"><div class="row-term">각의 재정의</div><div class="row-desc">라디안 = 단위원 부채꼴 넓이의 2배, \(\tfrac12 x\)는 정의</div></div>
+          <div class="row"><div class="row-term">급수 정의</div><div class="row-desc">\(\sin x=x-\frac{x^3}{3!}+\frac{x^5}{5!}-\cdots\), 원과의 연결은 별도 증명</div></div>
+          <div class="row"><div class="row-term">호의 길이</div><div class="row-desc">넓이 없이 \(\sin x\le x\le\tan x\)를 직접 증명<span class="src">이 발표에서 사용하는 방법</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. 구분 (dark) -->
+    <div class="slide slide-dark">
+      <div class="title-zone">
+        <div class="section-num">PART 04</div>
+        <h1 class="slide-title">넓이 없는 증명</h1>
+      </div>
+      <div class="content-zone center">
+        <div class="display-math">\(\displaystyle \sin x\;\le\;x\;\le\;\tan x\)</div>
+        <p class="info-line txt-muted">넓이·정적분·미분을 사용하지 않음</p>
+      </div>
+    </div>
+
+    <!-- 11. 호의 길이 (인터랙티브) -->
+    <div class="slide" data-section="4">
+      <div class="title-zone">
+        <h1 class="slide-title">호의 길이</h1>
+        <p class="slide-subtitle">중심각 \(x = 1.2\)</p>
+      </div>
+      <div class="content-zone">
+        <div class="cols">
+          <div class="graph-wrap"><canvas id="g-arc" width="720" height="650"></canvas></div>
+          <div class="col controls">
+            <div class="panel">
+              <div class="panel-title">정의</div>
+              <p class="info-line">호 위에 꼭짓점을 둔 꺾은선 길이들의 <strong>상한</strong>을 호의 길이 \(x\)로 정의</p>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">\(n\)</span>
+              <input type="range" id="arc-slider" min="1" max="24" step="1" value="1">
+              <span class="slider-value" id="arc-value">1</span>
+            </div>
+            <div class="preset-row">
+              <button class="preset-btn" data-arc="1">\(n=1\)</button>
+              <button class="preset-btn" data-arc="2">\(n=2\)</button>
+              <button class="preset-btn" data-arc="4">\(n=4\)</button>
+              <button class="preset-btn" data-arc="16">\(n=16\)</button>
+            </div>
+            <div class="info-line" id="arc-info"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. sin x < x -->
+    <div class="slide" data-section="4">
+      <div class="title-zone">
+        <h1 class="slide-title">첫째 부등식</h1>
+        <p class="slide-subtitle">\(\sin x &lt; x\)</p>
+      </div>
+      <div class="content-zone">
+        <div class="cols">
+          <div class="graph-wrap"><canvas id="g-sin" width="720" height="650"></canvas></div>
+          <div class="col controls">
+            <ul class="bullet-list sm">
+              <li>\(\sin x=\overline{PH}&lt;\overline{AP}\): 직각삼각형의 빗변</li>
+              <li>\(\overline{AP}\): 조각 1개인 꺾은선</li>
+              <li>모든 꺾은선 길이 \(\le\) 상한 \(x\)</li>
+            </ul>
+            <div class="display-math">\(\displaystyle \sin x\;&lt;\;\overline{AP}\;\le\;x\)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13. x ≤ tan x (인터랙티브) -->
+    <div class="slide" data-section="4">
+      <div class="title-zone">
+        <h1 class="slide-title">둘째 부등식</h1>
+        <p class="slide-subtitle">\(x \le \tan x\), 중심각 \(x = 1\)</p>
+      </div>
+      <div class="content-zone">
+        <div class="cols">
+          <div class="graph-wrap"><canvas id="g-shadow" width="720" height="650"></canvas></div>
+          <div class="col controls">
+            <div class="legend vertical">
+              <div class="legend-item"><div class="legend-line c1"></div><span>호 위의 꺾은선</span></div>
+              <div class="legend-item"><div class="legend-line c2"></div><span>접선 위의 그림자</span></div>
+              <div class="legend-item"><div class="legend-dash"></div><span>O에서 나온 빛</span></div>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">\(n\)</span>
+              <input type="range" id="shadow-slider" min="1" max="16" step="1" value="3">
+              <span class="slider-value" id="shadow-value">3</span>
+            </div>
+            <div class="info-line" id="shadow-info"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 14. 조각별 비교 -->
+    <div class="slide" data-section="4">
+      <div class="title-zone">
+        <h1 class="slide-title">조각별 비교</h1>
+        <p class="slide-subtitle">조각의 양 끝 각 \(a&lt;b\), \(d=b-a\)</p>
+      </div>
+      <div class="content-zone split">
+        <div class="display-math">\(\displaystyle \overline{PP'}=2\sin\frac d2,\qquad
+          \overline{QQ'}=\tan b-\tan a=\frac{2\sin\frac d2\cos\frac d2}{\cos a\cos b}\)</div>
+        <div class="display-math">\(\displaystyle \cos a\cos b=\frac12\bigl\{\cos d+\cos(a+b)\bigr\}\;\le\;\cos\frac d2
+          \quad\Longrightarrow\quad \overline{PP'}\le\overline{QQ'}\)</div>
+        <ul class="bullet-list sm">
+          <li>\(0\le \frac d2\le d\le a+b&lt;\pi\), 이 구간에서 \(\cos\)는 감소</li>
+          <li>그림자 조각의 합 \(=\tan x\) → 모든 꺾은선 길이 \(\le\tan x\)</li>
+          <li>상한의 정의에 의해 \(x\le\tan x\)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 15. cos x의 극한 -->
+    <div class="slide" data-section="4">
+      <div class="title-zone">
+        <h1 class="slide-title">\(\cos x\)의 극한</h1>
+        <p class="slide-subtitle">조임 정리에 쓰인 \(\cos x\to 1\)</p>
+      </div>
+      <div class="content-zone split">
+        <div class="display-math">\(\displaystyle 1-\cos x=2\sin^2\frac x2\;\le\;2\left(\frac x2\right)^{2}=\frac{x^2}{2}\)</div>
+        <div class="display-math">\(\displaystyle 1-\frac{x^2}{2}\;\le\;\cos x\;\le\;1
+          \qquad\Longrightarrow\qquad \lim_{x\to 0}\cos x=1\)</div>
+        <ul class="bullet-list sm">
+          <li>\(\sin t\le t\): 첫째 부등식의 결과</li>
+          <li>덧셈정리: 기하적 증명, 미분과 무관</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 16. 논리의 순서 -->
+    <div class="slide" data-section="5">
+      <div class="title-zone"><h1 class="slide-title">논리의 순서</h1></div>
+      <div class="content-zone split">
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-label">① 정의</div><div class="tl-title">호의 길이</div><div class="tl-body">꺾은선 길이의 상한</div></div>
+          <div class="tl-item"><div class="tl-label">② 부등식</div><div class="tl-title">빗변·그림자</div><div class="tl-body">\(\sin x\le x\le\tan x\)</div></div>
+          <div class="tl-item"><div class="tl-label">③ 극한</div><div class="tl-title">\(\cos x\to 1\)</div><div class="tl-body">\(1-\frac{x^2}{2}\le\cos x\)</div></div>
+          <div class="tl-item"><div class="tl-label">④ 극한</div><div class="tl-title">\(\frac{\sin x}{x}\to 1\)</div><div class="tl-body">조임 정리</div></div>
+          <div class="tl-item key"><div class="tl-label">⑤ 결론</div><div class="tl-title">\((\sin x)'=\cos x\)</div><div class="tl-body">합 → 곱 공식</div></div>
+        </div>
+        <div class="facts">
+          <div class="fact"><div class="fact-key">사용한 것</div><div class="fact-val">피타고라스 정리, 삼각부등식, 덧셈정리, 상한</div></div>
+          <div class="fact"><div class="fact-key">사용하지 않은 것</div><div class="fact-val">넓이, 정적분, 미분</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 17. 발표자 의견 -->
+    <div class="slide" data-section="5">
+      <div class="title-zone"><h1 class="slide-title">발표자 의견</h1></div>
+      <div class="content-zone">
+        <div class="rows lg">
+          <div class="row"><div class="row-term">느낀 점</div><div class="row-desc">[직접 작성]</div></div>
+          <div class="row"><div class="row-term">더 알아볼 점</div><div class="row-desc">[직접 작성]</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 18. 참고문헌 -->
+    <div class="slide" data-section="end">
+      <div class="title-zone"><h1 class="slide-title">참고문헌</h1></div>
+      <div class="content-zone">
+        <ol class="ref-list">
+          <li>수치남, 「교과서 증명은 순환논법? (2013 오사카대 본고사)」, YouTube, [게시 연도]. https://www.youtube.com/watch?v=FLWl8Rm9ovY</li>
+          <li>오사카대학, 2013년도 일반입시 이과 수학 1번.</li>
+          <li>[미적분Ⅱ 교과서 출판사], 『미적분Ⅱ』, 삼각함수의 극한과 미분 단원, p. [ ].</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- 19. 마무리 -->
+    <div class="slide slide-outro">
+      <div class="outro-inner">
+        <div class="outro-main">감사합니다</div>
+        <div class="outro-sub">질의응답</div>
+      </div>
+      <div class="cover-line"></div>
+    </div>
+
+  </div>
+  <div id="nav-bar">
+    <button id="btn-prev">◀</button>
+    <span id="slide-counter"></span>
+    <button id="btn-next">▶</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="slide.js"></script>
+</body>
+</html>
